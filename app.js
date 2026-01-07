@@ -531,6 +531,52 @@ export class App {
       this._handleTab();  // вставит '\t' в сессию
       this.input?.focus(); // клавиатура остаётся открытой
     });
+    const vv = window.visualViewport;
+
+    const updatePos = () => {
+      // Базовые отступы
+      const marginLeft = 14;
+      const marginBottom = 14;
+
+      // Safe-area (iOS/Android может быть 0, но ок)
+      const safeLeft = Number.parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue("--safe-left")) || 0;
+      const safeBottom = Number.parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue("--safe-bottom")) || 0;
+
+      // Подъём над клавиатурой (Android Chrome)
+      let keyboardLift = 0;
+      let offX = 0;
+      let offY = 0;
+
+      if (vv) {
+        offX = vv.offsetLeft || 0;
+        offY = vv.offsetTop || 0;
+
+        // если клавиатура открылась, visualViewport.height меньше
+        keyboardLift = Math.max(
+          0,
+          window.innerHeight - (vv.height + offY)
+        );
+      }
+
+      // Фиксируем слева и над клавиатурой
+      box.style.left = `${marginLeft + safeLeft}px`;
+      box.style.bottom = `${marginBottom + safeBottom + keyboardLift}px`;
+
+      // КЛЮЧЕВОЕ: при зуме/панорамировании "прибиваем" к visual viewport
+      // иначе fixed уедет относительно видимой области
+      box.style.transform = `translate3d(${offX}px, ${offY}px, 0)`;
+    };
+
+    // Инициализация и подписки
+    updatePos();
+
+    if (vv) {
+      vv.addEventListener("resize", updatePos);
+      vv.addEventListener("scroll", updatePos); // важнее всего при перетаскивании/зуме
+    }
+    window.addEventListener("resize", updatePos);
   }
 }
 
