@@ -265,3 +265,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (pointer: coarse){
   .mobile-keys{ display: flex; }
 }
+
+/* ===== Mobile-only fixes ===== */
+@media (pointer: coarse) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+@media (pointer: coarse) {
+  .code-area,
+  .code-area .token {
+    font-weight: 500;
+  }
+}
