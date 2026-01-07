@@ -1,0 +1,242 @@
+
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.layout-main {
+  flex: 1;
+}
+        
+
+.metrics-panel{
+  position: relative;
+  width: 100%;
+  margin-top: 18px;
+  background: rgba(13,16,32,0.8);
+  border-radius: 8px;
+  border: 1px solid #2a2e5e;
+  padding: 18px 0 12px; /* было 12px 0; — сверху чуть больше под кнопку */
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* НОРМАЛЬНОЕ сворачивание верхней части панели:
+   скрываем метрики + подсказку + кнопки, оставляем только стрелку */
+.panel.panel--top-collapsed .metrics-panel .metric-block,
+.panel.panel--top-collapsed .hint,
+.panel.panel--top-collapsed .controls{
+  display: none;
+}
+
+/* в свернутом виде панель метрик превращаем в тонкую полоску со стрелкой */
+.panel.panel--top-collapsed .metrics-panel{
+  padding: 10px 0;
+  gap: 0;
+  justify-content: flex-end;
+}
+
+/* стрелка остаётся видимой */
+.panel.panel--top-collapsed .metrics-toggle-btn{
+  display: inline-block;
+}
+
+
+/* Кнопка-стрелка как у бокового меню, но компактнее */
+.metrics-toggle-btn{
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  background: #222a44;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: #6bd3ff;
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 1px 2px 8px rgba(0,0,0,0.12);
+  transition: background 0.2s;
+}
+.metrics-toggle-btn:hover { background: #2a3458; }
+
+
+.metric-block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-width:80px;
+}
+
+.metric-label{
+  font-size:13px;
+  color:#b8b8d6;
+  margin-bottom:2px;
+}
+
+.metric-value{
+  font-size:1.4rem;
+  font-weight:bold;
+}
+
+
+.hidden-input{
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  resize: none;
+  pointer-events: none;
+}
+
+.results-panel{
+  display:none;
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  width:300px;
+  z-index:1000;
+  background:rgba(23,26,43,0.95);
+  border:1px solid #2a2e5e;
+  padding:12px;
+  border-radius:8px;
+  color:var(--text);
+}
+
+.results-title{
+  margin:0 0 8px;
+}
+
+.results-actions{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+
+
+
+.row-col { flex-direction: column; }
+.row-minh-260 { min-height: 260px; }
+        
+        /* Стили для бокового меню выбора задания */
+        .side-menu-btn {
+            position: fixed;
+            left: 0; top: 80px;
+            z-index: 1001;
+            background: #222a44;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 12px 10px;
+            cursor: pointer;
+            box-shadow: 1px 2px 8px rgba(0,0,0,0.12);
+            color: #6bd3ff;
+            font-size: 22px;
+            transition: background 0.2s;
+        }
+        .side-menu-btn:hover { background: #2a3458; }
+        .side-menu {
+            position: fixed;
+            left: -220px; top: 60px;
+            width: 220px;
+            height: 80vh;
+            background: #171a2b;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.18);
+            border-radius: 0 12px 12px 0;
+            z-index: 1002;
+            transition: left 0.3s cubic-bezier(.4,.2,.2,1);
+            display: flex;
+            flex-direction: column;
+            padding: 18px 0 18px 0;
+            overflow-y: auto;
+        }
+        .side-menu.open { left: 0; }
+        .side-menu-title {
+            font-size: 16px;
+            color: #b8b8d6;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .side-menu-list {
+            list-style: none;
+            margin: 0; padding: 0;
+            flex: 1;
+        }
+        .side-menu-list li {
+            padding: 8px 18px;
+            font-size: 15px;
+            color: #e6e6e6;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            transition: background 0.18s, color 0.18s;
+        }
+        .side-menu-list li.selected {
+            background: #2a3458;
+            color: #6bd3ff;
+            font-weight: bold;
+        }
+        .side-menu-list li:hover {
+            background: #232a44;
+            color: #6bd3ff;
+        }
+    .token.empty-current {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+:root{
+    --bg: #0f1220;
+    --panel: #171a2b;
+    --accent: #6bd3ff;
+    --text: #e6e6e6;
+    --wrong: #ff5c5c;
+    --correct: #2bd36d;
+    --cursor: #ffd166;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, Arial, sans-serif; background: linear-gradient(135deg, #0b0f1a 0%, #111523 100%); color: var(--text); }
+.wrap { max-width: 980px; margin: 40px auto; padding: 0 20px; }
+h1 { font-size: 1.6rem; margin: 0 0 12px; text-align: center; }
+.panel { background: rgba(23,26,43,0.9); border: 1px solid #2a2e5e; border-radius: 12px; padding: 16px; }
+.row { display: flex; gap: 16px; align-items: stretch; justify-content: space-between; flex-wrap: wrap; }
+.code-area { white-space: pre; font-family: ui-muntserrat, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 16px; padding: 14px; border-radius: 8px; background: #0b1020; border: 1px solid #2e2f58; width: 100%; min-height: 200px; line-height: 1.6; position: relative; }
+.code-area .token { padding: 0 2px; }
+/* Newline marker: hidden when inactive */
+.code-area .token.newline { color: rgba(154,163,178,0); opacity: 1; padding: 0 2px; font-style: normal; transition: opacity 120ms, color 120ms, background 120ms; }
+/* When cursor is on the newline, make it slightly visible (opacity 0.3) without the usual outline */
+.code-area .token.current.newline { opacity: 1; color: var(--accent); background: rgba(107,211,255,0.03); padding: 0 6px; outline: 2px solid var(--accent); outline-offset: -2px; position: relative; }
+/* Keep correct/wrong coloring subtle when not current */
+.code-area .token.newline.correct { background: rgba(43,211,109,0.03); color: rgba(43,211,109,0.5); }
+.code-area .token.newline.wrong { background: rgba(255,92,92,0.25); color: rgba(255,92,92,0.5); }
+.code-area .current {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    position: relative;
+}
+.code-area .correct { color: #a6f3ce; background: rgba(43, 211, 109, 0.15); }
+.code-area .wrong { color: #ffd7d7; background: rgba(255, 92, 92, 0.25); }
+.caret { display: inline-block; width: 0; height: 1em; vertical-align: -0.2em; border-left: 2px solid var(--cursor); margin-right: -2px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
+.stat { background: rgba(13,16,32,0.8); padding: 12px; border-radius: 8px; border: 1px solid #2a2e5e; min-width: 0; }
+.stat h3 { margin: 0 0 6px; font-size: 14px; color: #b8b8d6; }
+.stat .value { font-weight: bold; font-size: 1.6rem; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 12px; }
+button { background: #2e2f58; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+button.secondary { background: #3b3f7a; }
+button.primary { background: #4ea5ff; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.hint { text-align: center; color: #9aa3b2; font-size: 12px; margin-top: 6px; }
+@media (max-width: 800px){
+    .row { flex-direction: column; }
+}

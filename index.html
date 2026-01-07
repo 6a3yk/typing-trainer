@@ -1,170 +1,64 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8" />
   <title>Тренажер печати по Python</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-            /* Стили для бокового меню выбора задания */
-            .side-menu-btn {
-              position: fixed;
-              left: 0; top: 80px;
-              z-index: 1001;
-              background: #222a44;
-              border: none;
-              border-radius: 0 8px 8px 0;
-              padding: 12px 10px;
-              cursor: pointer;
-              box-shadow: 1px 2px 8px rgba(0,0,0,0.12);
-              color: #6bd3ff;
-              font-size: 22px;
-              transition: background 0.2s;
-            }
-            .side-menu-btn:hover { background: #2a3458; }
-            .side-menu {
-              position: fixed;
-              left: -220px; top: 60px;
-              width: 220px;
-              height: 80vh;
-              background: #171a2b;
-              box-shadow: 2px 0 16px rgba(0,0,0,0.18);
-              border-radius: 0 12px 12px 0;
-              z-index: 1002;
-              transition: left 0.3s cubic-bezier(.4,.2,.2,1);
-              display: flex;
-              flex-direction: column;
-              padding: 18px 0 18px 0;
-              overflow-y: auto;
-            }
-            .side-menu.open { left: 0; }
-            .side-menu-title {
-              font-size: 16px;
-              color: #b8b8d6;
-              text-align: center;
-              margin-bottom: 12px;
-            }
-            .side-menu-list {
-              list-style: none;
-              margin: 0; padding: 0;
-              flex: 1;
-            }
-            .side-menu-list li {
-              padding: 8px 18px;
-              font-size: 15px;
-              color: #e6e6e6;
-              cursor: pointer;
-              border-radius: 6px;
-              margin-bottom: 2px;
-              transition: background 0.18s, color 0.18s;
-            }
-            .side-menu-list li.selected {
-              background: #2a3458;
-              color: #6bd3ff;
-              font-weight: bold;
-            }
-            .side-menu-list li:hover {
-              background: #232a44;
-              color: #6bd3ff;
-            }
-        .token.empty-current {
-          outline: 2px solid var(--accent);
-          outline-offset: -2px;
-          background: none !important;
-          color: inherit !important;
-        }
-    :root{
-      --bg: #0f1220;
-      --panel: #171a2b;
-      --accent: #6bd3ff;
-      --text: #e6e6e6;
-      --wrong: #ff5c5c;
-      --correct: #2bd36d;
-      --cursor: #ffd166;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, Arial, sans-serif; background: linear-gradient(135deg, #0b0f1a 0%, #111523 100%); color: var(--text); }
-    .wrap { max-width: 980px; margin: 40px auto; padding: 0 20px; }
-    h1 { font-size: 1.6rem; margin: 0 0 12px; text-align: center; }
-    .panel { background: rgba(23,26,43,0.9); border: 1px solid #2a2e5e; border-radius: 12px; padding: 16px; }
-    .row { display: flex; gap: 16px; align-items: stretch; justify-content: space-between; flex-wrap: wrap; }
-    .code-area { white-space: pre; font-family: ui-muntserrat, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 16px; padding: 14px; border-radius: 8px; background: #0b1020; border: 1px solid #2e2f58; width: 100%; min-height: 200px; line-height: 1.6; position: relative; }
-    .code-area .token { padding: 0 2px; }
-    /* Newline marker: hidden when inactive */
-    .code-area .token.newline { color: rgba(154,163,178,0); opacity: 1; padding: 0 2px; font-style: normal; transition: opacity 120ms, color 120ms, background 120ms; }
-    /* When cursor is on the newline, make it slightly visible (opacity 0.3) without the usual outline */
-    .code-area .token.current.newline { opacity: 1; color: var(--accent); background: rgba(107,211,255,0.03); padding: 0 6px; outline: 2px solid var(--accent); outline-offset: -2px; position: relative; }
-    /* Keep correct/wrong coloring subtle when not current */
-    .code-area .token.newline.correct { background: rgba(43,211,109,0.03); color: rgba(43,211,109,0.5); }
-    .code-area .token.newline.wrong { background: rgba(255,92,92,0.25); color: rgba(255,92,92,0.5); }
-    .code-area .current {
-      outline: 2px solid var(--accent);
-      outline-offset: -2px;
-      position: relative;
-      background: none !important;
-      color: inherit !important;
-    }
-    .code-area .correct { color: #a6f3ce; background: rgba(43, 211, 109, 0.15); }
-    .code-area .wrong { color: #ffd7d7; background: rgba(255, 92, 92, 0.25); }
-    .caret { display: inline-block; width: 0; height: 1em; vertical-align: -0.2em; border-left: 2px solid var(--cursor); margin-right: -2px; }
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
-    .stat { background: rgba(13,16,32,0.8); padding: 12px; border-radius: 8px; border: 1px solid #2a2e5e; min-width: 0; }
-    .stat h3 { margin: 0 0 6px; font-size: 14px; color: #b8b8d6; }
-    .stat .value { font-weight: bold; font-size: 1.6rem; }
-    .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 12px; }
-    button { background: #2e2f58; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    button.secondary { background: #3b3f7a; }
-    button.primary { background: #4ea5ff; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .hint { text-align: center; color: #9aa3b2; font-size: 12px; margin-top: 6px; }
-    @media (max-width: 800px){
-      .row { flex-direction: column; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <!-- Кнопка открытия бокового меню -->
-    <button class="side-menu-btn" id="openMenuBtn" title="Выбрать задание" aria-label="Открыть меню заданий">&#x25B6;</button>
-    <!-- Боковое меню выбора задания -->
-    <nav class="side-menu" id="sideMenu" aria-label="Меню выбора задания">
-      <div class="side-menu-title">Выберите задание</div>
-      <ul class="side-menu-list" id="sideMenuList"></ul>
-    </nav>
+  <!-- Кнопка открытия бокового меню -->
+  <button class="side-menu-btn" id="openMenuBtn" title="Выбрать задание"
+    aria-label="Открыть меню заданий">&#x25B6;</button>
+  <!-- Боковое меню выбора задания -->
+  <nav class="side-menu" id="sideMenu" aria-label="Меню выбора задания">
+    <div class="side-menu-title">Выберите задание</div>
+    <ul class="side-menu-list" id="sideMenuList"></ul>
+  </nav>
   <div class="wrap">
     <h1>Тренажер печати по Python</h1>
-    <div style="display:flex; gap:24px; align-items:flex-start;">
-      <div style="flex:1;">
+    <div class="layout">
+      <div class="layout-main">
         <div class="panel">
-          <div class="row" style="flex-direction:column; min-height:260px;">
+          <div class="row row-col row-minh-260">
             <div class="code-area" id="codeArea" aria-label="Текст к набору">
               <!-- код будет вставлен программно -->
             </div>
-            <div class="metrics-panel" style="width:100%; margin-top:18px; background:rgba(13,16,32,0.8); border-radius:8px; border:1px solid #2a2e5e; padding:12px 0; display:flex; gap:32px; justify-content:center; align-items:center;">
-              <div class="metric-block" style="display:flex; flex-direction:column; align-items:center; min-width:80px;">
-                <div class="metric-label" style="font-size:13px; color:#b8b8d6; margin-bottom:2px;">Время</div>
-                <div class="value" id="timer" style="font-size:1.4rem; font-weight:bold;">00:00</div>
+            <div class="metrics-panel" id="metricsPanel">
+              <button class="metrics-toggle-btn" id="metricsToggleBtn" title="Свернуть/развернуть метрики"
+                aria-label="Свернуть/развернуть метрики">▲
+              </button>
+
+              <div class="metric-block">
+                <div class="metric-label">Время</div>
+                <div class="metric-value" id="timer">00:00</div>
               </div>
-              <div class="metric-block" style="display:flex; flex-direction:column; align-items:center; min-width:80px;">
-                <div class="metric-label" style="font-size:13px; color:#b8b8d6; margin-bottom:2px;">Прогресс</div>
-                <div class="value" id="progress" style="font-size:1.4rem; font-weight:bold;">0 / 0</div>
+              <div class="metric-block">
+                <div class="metric-label">Прогресс</div>
+                <div class="metric-value" id="progress">0 / 0</div>
               </div>
-              <div class="metric-block" style="display:flex; flex-direction:column; align-items:center; min-width:80px;">
-                <div class="metric-label" style="font-size:13px; color:#b8b8d6; margin-bottom:2px;">Символов в минуту</div>
-                <div class="value" id="wpm" style="font-size:1.4rem; font-weight:bold;">0</div>
+              <div class="metric-block">
+                <div class="metric-label">Символов в минуту</div>
+                <div class="metric-value" id="cpm">0</div>
               </div>
-              <div class="metric-block" style="display:flex; flex-direction:column; align-items:center; min-width:80px;">
-                <div class="metric-label" style="font-size:13px; color:#b8b8d6; margin-bottom:2px;">Точность</div>
-                <div class="value" id="accuracy" style="font-size:1.4rem; font-weight:bold;">0%</div>
+              <div class="metric-block">
+                <div class="metric-label">Точность</div>
+                <div class="metric-value" id="accuracy">0%</div>
               </div>
-              <div class="metric-block" style="display:flex; flex-direction:column; align-items:center; min-width:80px;">
-                <div class="metric-label" style="font-size:13px; color:#b8b8d6; margin-bottom:2px;">Ошибки</div>
-                <div class="value" id="errors" style="font-size:1.4rem; font-weight:bold;">0</div>
+              <div class="metric-block">
+                <div class="metric-label">Ошибки</div>
+                <div class="metric-value" id="errors">0</div>
               </div>
             </div>
           </div>
-          <div class="hint" id="hint">Подсказка: начните печатать. Используйте пробел, Tab(4 пробела) и Enter как в коде.</div>
+          <div class="hint" id="hint">Подсказка: начните печатать. Используйте пробел, Tab(4 пробела) и Enter как в
+            коде.</div>
           <div class="controls" role="group" aria-label="Управление">
             <button id="startBtn" class="primary">Начать заново</button>
-            <button id="resetBtn" class="secondary" title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить прогресс</button>
+            <button id="resetBtn" class="secondary" title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить
+              прогресс</button>
           </div>
         </div>
       </div>
@@ -172,88 +66,27 @@
   </div>
 
   <!-- Скрытый input для надёжного приёма ввода (поддержка IME, мобильных клавиатур) -->
-  <textarea id="hiddenInput" aria-label="Скрытый ввод" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position:fixed; left:8px; top:8px; width:1px; height:1px; opacity:0; border:0; margin:0; padding:0; overflow:hidden; background:transparent; resize:none;"></textarea>
+  <textarea id="hiddenInput" class="hidden-input" aria-label="Скрытый ввод" autocomplete="off" autocorrect="off"
+    autocapitalize="off" spellcheck="false"></textarea>
+  <!-- <script type="module">
+  window.CODE_TO_TYPE = `print("Hello, world!")\nif 5>2:\n\ta=5-2`;
+</script> -->
+  <script type="module" src="./app.js"></script>
 
-  <script>
-    // Фрагмент кода Python, который нужно печатать.
-    // Используем window. чтобы переменная была доступна как глобальное свойство.
-    window.CODE_TO_TYPE = `def greet(name: str) -> str:
 
-	message = f"Привет, \${name}!"
-	print(message)
-	return message
-
-if __name__ == "__main__":
-	main()`;
-  </script>
-  <script src="trainer.js"></script>
-    <script>
-      // JS для бокового меню выбора задания
-      const openMenuBtn = document.getElementById('openMenuBtn');
-      const sideMenu = document.getElementById('sideMenu');
-      const sideMenuList = document.getElementById('sideMenuList');
-      let menuOpen = false;
-      function openMenu() {
-        sideMenu.classList.add('open');
-        menuOpen = true;
-      }
-      function closeMenu() {
-        sideMenu.classList.remove('open');
-        menuOpen = false;
-      }
-      openMenuBtn.addEventListener('click', () => {
-        menuOpen ? closeMenu() : openMenu();
-      });
-      document.addEventListener('click', (e) => {
-        if (menuOpen && !sideMenu.contains(e.target) && e.target !== openMenuBtn) closeMenu();
-      });
-      // Заполнить меню заданиями
-      function fillMenu() {
-        if (!window.PYTHON_TASKS) return;
-        sideMenuList.innerHTML = '';
-        window.PYTHON_TASKS.forEach(task => {
-          const li = document.createElement('li');
-          li.textContent = `Задание ${task.num}`;
-          li.dataset.num = task.num;
-          if (window.CODE_TO_TYPE === task.code) li.classList.add('selected');
-          li.addEventListener('click', () => {
-            window.CODE_TO_TYPE = task.code;
-            if (window.Trainer && typeof window.Trainer.initTrainer === 'function') {
-              window.Trainer.initTrainer();
-            }
-            fillMenu();
-            closeMenu();
-          });
-          sideMenuList.appendChild(li);
-        });
-      }
-      // Инициализация меню после загрузки заданий
-      window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(fillMenu, 300);
-      });
-      // После смены задания через Trainer — обновить выделение
-      window.addEventListener('codeToTypeChanged', fillMenu);
-    </script>
-  <script>
-    // Инициализируем тренажёр после загрузки скрипта
-    if (window.Trainer && typeof window.Trainer.initTrainer === 'function') {
-      try { window.Trainer.initTrainer(); } catch (e) { console.error('initTrainer error', e); }
-    } else {
-      console.warn('Trainer.initTrainer not available');
-    }
-  </script>
   <!-- Панель результатов -->
-  <div id="resultsPanel" style="display:none; position:fixed; right:20px; bottom:20px; width:300px; z-index:1000; background:rgba(23,26,43,0.95); border:1px solid #2a2e5e; padding:12px; border-radius:8px; color:var(--text);">
-    <h3 style="margin:0 0 8px;">Результат</h3>
+  <div id="resultsPanel" class="results-panel">
+    <h3 class="results-title">Результат</h3>
     <div>Время: <strong id="resTime">00:00</strong></div>
-    <div>Символов в минуту: <strong id="resWpm">0</strong></div>
+    <div>Символов в минуту: <strong id="resCpm">0</strong></div>
     <div>Точность (с первого раза): <strong id="resAcc">0%</strong></div>
     <div>Текущие ошибки: <strong id="resErrors">0</strong></div>
-    <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+    <div class="results-actions">
       <button id="retryBtn" class="primary">Повторить</button>
-      <button id="exportBtn" class="secondary">Экспорт</button>
+      <button id="exportBtn" class="secondary" style="display:none">Экспорт</button>
       <button id="closeResBtn">Закрыть</button>
     </div>
   </div>
 </body>
+
 </html>
