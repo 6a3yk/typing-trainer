@@ -446,9 +446,9 @@ button:disabled {
   height: 68px;
   border-radius: 18px;
   border: 1px solid #2a2e5e;
-  background: rgba(13, 16, 32, 0.92);
+  background: rgba(51, 77, 226, 0.92);
   color: #6bd3ff;
-  font-size: 22px;
+  font-size: 30px;
   /* ↑ шрифт */
   font-weight: 900;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
