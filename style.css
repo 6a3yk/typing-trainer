@@ -474,3 +474,8 @@ button:disabled {
     --safe-bottom: env(safe-area-inset-bottom);
   }
 }
+
+.code-area, .code-area .token{
+  tab-size: 4;
+  -moz-tab-size: 4;
+}

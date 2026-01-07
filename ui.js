@@ -97,8 +97,11 @@ export class UI {
       let text = s.expected;
       if (s.expected === "\t") text = "    ";
       if (s.expected === "\n") text = (i === cursor ? "↵" : "\u00A0");
-      if (s.entered && s.correct === false && s.typed) text = s.typed === "\n" ? "\u00A0" : s.typed;
-
+      if (s.entered && s.correct === false && s.typed) {
+        if (s.typed === "\n") text = "\u00A0";
+        else if (s.typed === "\t") text = "    ";     // ← ВОТ ОНО
+        else text = s.typed;
+      }
       span.textContent = text || "\u00A0";
       this.codeArea.appendChild(span);
 
