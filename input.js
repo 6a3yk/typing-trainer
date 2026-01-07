@@ -30,6 +30,7 @@ export class InputController {
     this.el = el;
     this.handlers = handlers;
     this._lastValue = "";
+    this._sentinel = "\u200B"; // zero-width space, чтобы Backspace всегда "имел что удалить" на мобиле
 
     // Флаг: идёт ли IME-композиция (ввод "пачкой", например через подсказки/кандидаты)
     this.composing = false;
@@ -96,13 +97,10 @@ export class InputController {
    */
   focus() {
     if (!this.el) return;
+    try { this.el.focus({ preventScroll: true }); }
+    catch { this.el.focus(); }
 
-    // preventScroll поддерживается современными браузерами
-    try {
-      this.el.focus({ preventScroll: true });
-    } catch {
-      this.el.focus();
-    }
+    this._ensureSentinel();
   }
 
   /**
@@ -110,6 +108,12 @@ export class InputController {
    */
   clear() {
     if (!this.el) return;
+
+    if (this.mode === "mobile") {
+      this._ensureSentinel();
+      return;
+    }
+
     this.el.value = "";
   }
 
@@ -202,16 +206,8 @@ export class InputController {
 
   _onInput() {
     if (this.mode === "mobile") {
-      const v = this.el.value || "";
-
-      // Если value стало короче — это удаление (backspace),
-      // иногда так приходит вместо beforeinput.
-      if (v.length < this._lastValue.length) {
-        this.handlers?.onBackspace?.();
-      }
-
-      this._lastValue = "";
-      this.clear();
+      // всё важное ловим в beforeinput, тут просто держим поле "заряженным"
+      this._ensureSentinel();
       return;
     }
     // Во время IME-композиции игнорируем input, чтобы не ловить промежуточные состояния.
@@ -269,8 +265,8 @@ export class InputController {
 
     if (t === "deleteContentBackward") {
       e.preventDefault();
-      this.clear();
       this.handlers?.onBackspace?.();
+      this._ensureSentinel();
       return;
     }
 
@@ -285,12 +281,12 @@ export class InputController {
       const ch = typeof e.data === "string" ? e.data : "";
       if (ch.length !== 1) {
         e.preventDefault();
-        this.clear();
+        this._ensureSentinel();
         return;
       }
       e.preventDefault();
-      this.clear();
       this.handlers?.onChar?.(ch);
+      this._ensureSentinel();
       return;
     }
 
@@ -308,5 +304,20 @@ export class InputController {
       this.clear();
       return;
     }
+  }
+  _ensureSentinel() {
+    if (!this.el) return;
+    if (this.mode !== "mobile") return;
+
+    if (this.el.value !== this._sentinel) {
+      this.el.value = this._sentinel;
+    }
+
+    // курсор в конец (на всякий)
+    try {
+      if (typeof this.el.setSelectionRange === "function") {
+        this.el.setSelectionRange(this.el.value.length, this.el.value.length);
+      }
+    } catch { }
   }
 }
