@@ -43,6 +43,7 @@ export class InputController {
     this._onInput = this._onInput.bind(this);
     this._onCompositionStart = this._onCompositionStart.bind(this);
     this._onCompositionEnd = this._onCompositionEnd.bind(this);
+    this._onBeforeInput = this._onBeforeInput.bind(this);
   }
 
   /**
@@ -62,6 +63,8 @@ export class InputController {
 
     // input — для обычных символов (и для вставки, авто-ввода и т.п.)
     this.el.addEventListener("input", this._onInput);
+
+    this.el.addEventListener("beforeinput", this._onBeforeInput);
   }
 
   /**
@@ -74,6 +77,7 @@ export class InputController {
     this.el.removeEventListener("compositionend", this._onCompositionEnd);
     this.el.removeEventListener("keydown", this._onKeydown);
     this.el.removeEventListener("input", this._onInput);
+    this.el.removeEventListener("beforeinput", this._onBeforeInput);
   }
 
   /**
@@ -238,4 +242,37 @@ export class InputController {
       this.handlers.onChar(ch);
     }
   }
+  _onBeforeInput(e) {
+  if (!this.enabled) return;
+
+  // Это как раз то, что делает моб. автодоп/автозамена:
+  // заменяет слово/часть слова "умно", а нам это не нужно.
+  const t = e.inputType || "";
+
+  // Жёстко режем всё, что НЕ "обычный ввод одного символа"
+  // (replacements, history undo/redo, автозамены и т.п.)
+  if (
+    t === "insertReplacementText" ||
+    t === "insertFromPaste" ||
+    t === "insertFromDrop" ||
+    t === "insertFromYank" ||
+    t === "insertFromComposition" ||   // иногда IME присылает так
+    t === "insertCompositionText" ||   // промежуточный текст
+    t === "deleteByCut" ||
+    t === "historyUndo" ||
+    t === "historyRedo"
+  ) {
+    e.preventDefault();
+    this.clear();
+    return;
+  }
+
+  // Доп. правило: если браузер собирается вставить строку > 1 символа — режем
+  // (на некоторых клавиатурах data уже тут есть)
+  if (typeof e.data === "string" && e.data.length > 1) {
+    e.preventDefault();
+    this.clear();
+    return;
+  }
+}
 }

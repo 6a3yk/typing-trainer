@@ -54,6 +54,7 @@ export class App {
     this.sideMenu = document.getElementById("sideMenu");
     this.sideMenuList = document.getElementById("sideMenuList");
     this.openMenuBtn = document.getElementById("openMenuBtn");
+    
   }
 
   /**

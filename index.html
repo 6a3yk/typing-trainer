@@ -66,8 +66,16 @@
   </div>
 
   <!-- Скрытый input для надёжного приёма ввода (поддержка IME, мобильных клавиатур) -->
-  <textarea id="hiddenInput" class="hidden-input" aria-label="Скрытый ввод" autocomplete="off" autocorrect="off"
-    autocapitalize="off" spellcheck="false"></textarea>
+  <input
+  id="hiddenInput"
+  class="hidden-input"
+  type="password"
+  inputmode="text"
+  autocomplete="new-password"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+/>
   <!-- <script type="module">
   window.CODE_TO_TYPE = `print("Hello, world!")\nif 5>2:\n\ta=5-2`;
 </script> -->
