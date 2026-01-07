@@ -57,6 +57,8 @@ export class App {
     this.sideMenuList = document.getElementById("sideMenuList");
     this.openMenuBtn = document.getElementById("openMenuBtn");
 
+
+    this.isMobile = false;
   }
 
   /**
@@ -101,7 +103,6 @@ export class App {
     this._renderSideMenu();
     this._bindTopControls();
     this._bindMetricsToggle();
-    this._bindMobileKeys();
     // 4. Рендерим начальное состояние
     this._render();
 
@@ -109,8 +110,10 @@ export class App {
     const isMobileLike =
       (navigator.maxTouchPoints ?? 0) > 0 && matchMedia("(pointer: coarse)").matches;
 
+    this.isMobile = isMobileLike;
     this.inputEl = isMobileLike ? this.inputElMobile : this.inputElDesktop;
     this._initInput();
+    this._bindFabKeys();
     saveActiveTaskId(this.task.id);
     // 7. Клик по коду = вернуть фокус в hiddenInput
     const codeArea = document.getElementById("codeArea");
@@ -210,25 +213,17 @@ export class App {
    * Инициализация контроллера ввода
    */
   _initInput() {
-    this._startTicker(); // всегда запускаем
+    // this._startTicker(); // всегда запускаем
     this.input = new InputController(this.inputEl, {
       onChar: (ch) => this._handleChar(ch),
       onBackspace: () => this._handleBackspace(),
       onEnter: () => this._handleEnter(),
       onTab: () => this._handleTab(),
     });
-    this.input.setMode(isMobileLike() ? "mobile" : "desktop");
+    this.input.setMode(this.isMobile ? "mobile" : "desktop");
 
     this.input.attach();
     this.input.focus();
-    // Клик по области кода = вернуть фокус в hiddenInput
-    const codeArea = document.getElementById("codeArea");
-    if (codeArea) {
-      codeArea.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        this.input.focus();
-      });
-    }
   }
 
 
@@ -516,27 +511,25 @@ export class App {
     });
   }
 
-  _bindMobileKeys() {
-    const keys = document.getElementById("mobileKeys");
-    const tabBtn = document.getElementById("mkTab");
-    if (!keys || !tabBtn) return;
+  _bindFabKeys() {
+    const btn = document.getElementById("fabTab");
+    const box = document.getElementById("fabKeys");
+    if (!btn || !box) return;
 
-    // если не тач — вообще ничего не делаем
+    // страховка: если это не тач — не работаем вообще
     const isTouch = (navigator.maxTouchPoints ?? 0) > 0 && matchMedia("(pointer: coarse)").matches;
-    if (!isTouch) return;
+    if (!isTouch) {
+      box.style.display = "none";
+      return;
+    }
 
-    // ВАЖНО: используем pointerdown, чтобы:
-    // 1) не терять фокус (click иногда успевает увести)
-    // 2) быстрее реагировать
-    tabBtn.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
+    // pointerdown, чтобы не терять фокус и не получать "клик с задержкой"
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); // не уводим фокус с hiddenInput
       e.stopPropagation();
 
-      // напрямую вызываем твой нормальный обработчик таба
-      this._handleTab();
-
-      // возвращаем фокус в hiddenInput, чтобы клава не схлопнулась
-      this.input?.focus();
+      this._handleTab();  // вставит '\t' в сессию
+      this.input?.focus(); // клавиатура остаётся открытой
     });
   }
 }

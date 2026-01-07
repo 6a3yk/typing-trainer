@@ -29,6 +29,7 @@ export class InputController {
   constructor(el, handlers) {
     this.el = el;
     this.handlers = handlers;
+    this._lastValue = "";
 
     // Флаг: идёт ли IME-композиция (ввод "пачкой", например через подсказки/кандидаты)
     this.composing = false;
@@ -45,7 +46,7 @@ export class InputController {
     this._onInput = this._onInput.bind(this);
     this._onCompositionStart = this._onCompositionStart.bind(this);
     this._onCompositionEnd = this._onCompositionEnd.bind(this);
-    
+
   }
 
   /**
@@ -94,15 +95,15 @@ export class InputController {
    * Сфокусировать textarea, чтобы ввод шёл туда.
    */
   focus() {
-  if (!this.el) return;
+    if (!this.el) return;
 
-  // preventScroll поддерживается современными браузерами
-  try {
-    this.el.focus({ preventScroll: true });
-  } catch {
-    this.el.focus();
+    // preventScroll поддерживается современными браузерами
+    try {
+      this.el.focus({ preventScroll: true });
+    } catch {
+      this.el.focus();
+    }
   }
-}
 
   /**
    * Очистить поле ввода (чтобы input не содержал "хвостов")
@@ -200,7 +201,19 @@ export class InputController {
   }
 
   _onInput() {
-    if (this.mode === "mobile") { this.clear(); return; }
+    if (this.mode === "mobile") {
+      const v = this.el.value || "";
+
+      // Если value стало короче — это удаление (backspace),
+      // иногда так приходит вместо beforeinput.
+      if (v.length < this._lastValue.length) {
+        this.handlers?.onBackspace?.();
+      }
+
+      this._lastValue = "";
+      this.clear();
+      return;
+    }
     // Во время IME-композиции игнорируем input, чтобы не ловить промежуточные состояния.
     if (this.composing) return;
 
@@ -245,55 +258,55 @@ export class InputController {
     }
   }
   setMode(mode) {
-  this.mode = (mode === "mobile") ? "mobile" : "desktop";
-}
-_onBeforeInput(e) {
-  if (!this.enabled) return;
-  if (this.mode !== "mobile") return; // <-- ключ: ПК не трогаем
-  if (this.composing) return;
-
-  const t = e.inputType || "";
-
-  if (t === "deleteContentBackward") {
-    e.preventDefault();
-    this.clear();
-    this.handlers?.onBackspace?.();
-    return;
+    this.mode = (mode === "mobile") ? "mobile" : "desktop";
   }
+  _onBeforeInput(e) {
+    if (!this.enabled) return;
+    if (this.mode !== "mobile") return; // <-- ключ: ПК не трогаем
+    if (this.composing) return;
+    this._lastValue = this.el.value || "";
+    const t = e.inputType || "";
 
-  if (t === "insertLineBreak") {
-    e.preventDefault();
-    this.clear();
-    this.handlers?.onEnter?.();
-    return;
-  }
+    if (t === "deleteContentBackward") {
+      e.preventDefault();
+      this.clear();
+      this.handlers?.onBackspace?.();
+      return;
+    }
 
-  if (t === "insertText") {
-    const ch = typeof e.data === "string" ? e.data : "";
-    if (ch.length !== 1) {
+    if (t === "insertLineBreak") {
+      e.preventDefault();
+      this.clear();
+      this.handlers?.onEnter?.();
+      return;
+    }
+
+    if (t === "insertText") {
+      const ch = typeof e.data === "string" ? e.data : "";
+      if (ch.length !== 1) {
+        e.preventDefault();
+        this.clear();
+        return;
+      }
+      e.preventDefault();
+      this.clear();
+      this.handlers?.onChar?.(ch);
+      return;
+    }
+
+    // режем "умные" вставки/замены
+    if (
+      t === "insertReplacementText" ||
+      t === "insertFromPaste" ||
+      t === "insertFromDrop" ||
+      t === "insertFromYank" ||
+      t === "deleteByCut" ||
+      t === "historyUndo" ||
+      t === "historyRedo"
+    ) {
       e.preventDefault();
       this.clear();
       return;
     }
-    e.preventDefault();
-    this.clear();
-    this.handlers?.onChar?.(ch);
-    return;
   }
-
-  // режем "умные" вставки/замены
-  if (
-    t === "insertReplacementText" ||
-    t === "insertFromPaste" ||
-    t === "insertFromDrop" ||
-    t === "insertFromYank" ||
-    t === "deleteByCut" ||
-    t === "historyUndo" ||
-    t === "historyRedo"
-  ) {
-    e.preventDefault();
-    this.clear();
-    return;
-  }
-}
 }
