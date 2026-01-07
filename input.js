@@ -14,7 +14,7 @@
 
 export class InputController {
   /**
-   * @param {HTMLTextAreaElement} el - textarea, куда браузер будет "печать" ввод.
+   * @param {HTMLTextAreaElement|HTMLInputElement} el - textarea, куда браузер будет "печать" ввод.
    * @param {Object} handlers - набор коллбеков (куда отправлять события).
    *
    * Минимально ожидаемые handlers:
@@ -32,6 +32,8 @@ export class InputController {
 
     // Флаг: идёт ли IME-композиция (ввод "пачкой", например через подсказки/кандидаты)
     this.composing = false;
+    this.mode = "desktop"; // default
+    this._onBeforeInput = this._onBeforeInput.bind(this);
 
     // Можно выключать контроллер (например после finished),
     // чтобы он просто игнорировал ввод.
@@ -43,7 +45,7 @@ export class InputController {
     this._onInput = this._onInput.bind(this);
     this._onCompositionStart = this._onCompositionStart.bind(this);
     this._onCompositionEnd = this._onCompositionEnd.bind(this);
-    this._onBeforeInput = this._onBeforeInput.bind(this);
+    
   }
 
   /**
@@ -52,10 +54,10 @@ export class InputController {
    */
   attach() {
     if (!this.el) throw new Error("InputController: textarea element is missing");
-
     // compositionstart/end — чтобы не ловить "двойной ввод" при IME
     this.el.addEventListener("compositionstart", this._onCompositionStart);
     this.el.addEventListener("compositionend", this._onCompositionEnd);
+    this.el.addEventListener("beforeinput", this._onBeforeInput);
 
     // keydown — чтобы перехватывать Backspace/Tab/Enter и не давать браузеру
     // делать "свои" действия (Tab — смена фокуса, Enter — перевод строки в textarea)
@@ -63,8 +65,6 @@ export class InputController {
 
     // input — для обычных символов (и для вставки, авто-ввода и т.п.)
     this.el.addEventListener("input", this._onInput);
-
-    this.el.addEventListener("beforeinput", this._onBeforeInput);
   }
 
   /**
@@ -78,6 +78,7 @@ export class InputController {
     this.el.removeEventListener("keydown", this._onKeydown);
     this.el.removeEventListener("input", this._onInput);
     this.el.removeEventListener("beforeinput", this._onBeforeInput);
+
   }
 
   /**
@@ -199,6 +200,7 @@ export class InputController {
   }
 
   _onInput() {
+    if (this.mode === "mobile") { this.clear(); return; }
     // Во время IME-композиции игнорируем input, чтобы не ловить промежуточные состояния.
     if (this.composing) return;
 
@@ -242,34 +244,53 @@ export class InputController {
       this.handlers.onChar(ch);
     }
   }
-  _onBeforeInput(e) {
+  setMode(mode) {
+  this.mode = (mode === "mobile") ? "mobile" : "desktop";
+}
+_onBeforeInput(e) {
   if (!this.enabled) return;
+  if (this.mode !== "mobile") return; // <-- ключ: ПК не трогаем
+  if (this.composing) return;
 
-  // Это как раз то, что делает моб. автодоп/автозамена:
-  // заменяет слово/часть слова "умно", а нам это не нужно.
   const t = e.inputType || "";
 
-  // Жёстко режем всё, что НЕ "обычный ввод одного символа"
-  // (replacements, history undo/redo, автозамены и т.п.)
+  if (t === "deleteContentBackward") {
+    e.preventDefault();
+    this.clear();
+    this.handlers?.onBackspace?.();
+    return;
+  }
+
+  if (t === "insertLineBreak") {
+    e.preventDefault();
+    this.clear();
+    this.handlers?.onEnter?.();
+    return;
+  }
+
+  if (t === "insertText") {
+    const ch = typeof e.data === "string" ? e.data : "";
+    if (ch.length !== 1) {
+      e.preventDefault();
+      this.clear();
+      return;
+    }
+    e.preventDefault();
+    this.clear();
+    this.handlers?.onChar?.(ch);
+    return;
+  }
+
+  // режем "умные" вставки/замены
   if (
     t === "insertReplacementText" ||
     t === "insertFromPaste" ||
     t === "insertFromDrop" ||
     t === "insertFromYank" ||
-    t === "insertFromComposition" ||   // иногда IME присылает так
-    t === "insertCompositionText" ||   // промежуточный текст
     t === "deleteByCut" ||
     t === "historyUndo" ||
     t === "historyRedo"
   ) {
-    e.preventDefault();
-    this.clear();
-    return;
-  }
-
-  // Доп. правило: если браузер собирается вставить строку > 1 символа — режем
-  // (на некоторых клавиатурах data уже тут есть)
-  if (typeof e.data === "string" && e.data.length > 1) {
     e.preventDefault();
     this.clear();
     return;

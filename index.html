@@ -59,6 +59,9 @@
             <button id="startBtn" class="primary">Начать заново</button>
             <button id="resetBtn" class="secondary" title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить
               прогресс</button>
+            <div class="mobile-keys" id="mobileKeys" aria-label="Кнопки для мобильного ввода">
+              <button class="mk" id="mkTab" type="button">Tab</button>
+            </div>
           </div>
         </div>
       </div>
@@ -66,16 +69,10 @@
   </div>
 
   <!-- Скрытый input для надёжного приёма ввода (поддержка IME, мобильных клавиатур) -->
-  <input
-  id="hiddenInput"
-  class="hidden-input"
-  type="password"
-  inputmode="text"
-  autocomplete="new-password"
-  autocorrect="off"
-  autocapitalize="off"
-  spellcheck="false"
-/>
+  <textarea id="hiddenInput" class="hidden-input" aria-label="Скрытый ввод" autocomplete="off" autocorrect="off"
+    autocapitalize="off" spellcheck="false"></textarea>
+  <input id="hiddenInputPwd" class="hidden-input" type="password" inputmode="text" autocomplete="new-password"
+    autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Скрытый ввод (мобильный)" />
   <!-- <script type="module">
   window.CODE_TO_TYPE = `print("Hello, world!")\nif 5>2:\n\ta=5-2`;
 </script> -->

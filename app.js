@@ -44,7 +44,9 @@ export class App {
     this._tickMs = 200; // как в старом trainer.js было норм
 
     // DOM
-    this.inputEl = document.getElementById("hiddenInput");
+    this.inputElDesktop = document.getElementById("hiddenInput");
+    this.inputElMobile = document.getElementById("hiddenInputPwd");
+    this.inputEl = null;
 
     // Флаг инициализации
     this.initialized = false;
@@ -54,7 +56,7 @@ export class App {
     this.sideMenu = document.getElementById("sideMenu");
     this.sideMenuList = document.getElementById("sideMenuList");
     this.openMenuBtn = document.getElementById("openMenuBtn");
-    
+
   }
 
   /**
@@ -99,11 +101,15 @@ export class App {
     this._renderSideMenu();
     this._bindTopControls();
     this._bindMetricsToggle();
-
+    this._bindMobileKeys();
     // 4. Рендерим начальное состояние
     this._render();
 
     // 5. Подключаем ввод
+    const isMobileLike =
+      (navigator.maxTouchPoints ?? 0) > 0 && matchMedia("(pointer: coarse)").matches;
+
+    this.inputEl = isMobileLike ? this.inputElMobile : this.inputElDesktop;
     this._initInput();
     saveActiveTaskId(this.task.id);
     // 7. Клик по коду = вернуть фокус в hiddenInput
@@ -111,6 +117,10 @@ export class App {
     if (codeArea) {
       codeArea.addEventListener("mousedown", (e) => {
         // mousedown лучше чем click: фокус возвращается раньше
+        e.preventDefault();
+        this.input.focus();
+      });
+      codeArea.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         this.input.focus();
       });
@@ -207,6 +217,7 @@ export class App {
       onEnter: () => this._handleEnter(),
       onTab: () => this._handleTab(),
     });
+    this.input.setMode(isMobileLike() ? "mobile" : "desktop");
 
     this.input.attach();
     this.input.focus();
@@ -504,6 +515,30 @@ export class App {
       apply(collapsed);
     });
   }
+
+  _bindMobileKeys() {
+    const keys = document.getElementById("mobileKeys");
+    const tabBtn = document.getElementById("mkTab");
+    if (!keys || !tabBtn) return;
+
+    // если не тач — вообще ничего не делаем
+    const isTouch = (navigator.maxTouchPoints ?? 0) > 0 && matchMedia("(pointer: coarse)").matches;
+    if (!isTouch) return;
+
+    // ВАЖНО: используем pointerdown, чтобы:
+    // 1) не терять фокус (click иногда успевает увести)
+    // 2) быстрее реагировать
+    tabBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // напрямую вызываем твой нормальный обработчик таба
+      this._handleTab();
+
+      // возвращаем фокус в hiddenInput, чтобы клава не схлопнулась
+      this.input?.focus();
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -517,3 +552,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Для отладки (можно убрать позже)
   window.__APP__ = app;
 });
+
+function isMobileLike() {
+  // надёжнее, чем тупо userAgent: учитывает тач
+  return (
+    (navigator.maxTouchPoints ?? 0) > 0 &&
+    matchMedia("(pointer: coarse)").matches
+  );
+
+}
