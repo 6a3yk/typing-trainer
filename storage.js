@@ -10,7 +10,8 @@ const STORAGE_VERSION = 2;
 // Делим ключи: отдельно прогресс задач, отдельно "последнее активное задание".
 const KEY_PREFIX_TASK = `typing_trainer_v${STORAGE_VERSION}_task_`;
 const KEY_ACTIVE_TASK = `typing_trainer_v${STORAGE_VERSION}_active_task_id`;
-
+const KEY_RACE_ENABLED = `typing_trainer_v${STORAGE_VERSION}_ui_race_enabled`;
+const KEY_AUTO_NEXT = `typing_trainer_v${STORAGE_VERSION}_ui_auto_next`;
 /**
  * Собирает ключ localStorage для конкретного задания.
  * taskId — строка (например "ege:loops:01")
@@ -148,5 +149,44 @@ export function loadActiveTaskId() {
     return val ? String(val) : null;
   } catch {
     return null;
+  }
+}
+
+
+export function saveRaceEnabled(enabled) {
+  if (!canUseLocalStorage()) return;
+  try {
+    localStorage.setItem(KEY_RACE_ENABLED, enabled ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
+export function loadRaceEnabled(defaultValue) {
+  if (!canUseLocalStorage()) return !!defaultValue;
+  try {
+    const v = localStorage.getItem(KEY_RACE_ENABLED);
+    if (v === null) return !!defaultValue;
+    return v === "1";
+  } catch {
+    return !!defaultValue;
+  }
+}
+
+export function saveAutoNextEnabled(enabled) {
+  if (!canUseLocalStorage()) return;
+  try {
+    localStorage.setItem(KEY_AUTO_NEXT, enabled ? "1" : "0");
+  } catch { }
+}
+
+export function loadAutoNextEnabled(defaultValue) {
+  if (!canUseLocalStorage()) return !!defaultValue;
+  try {
+    const v = localStorage.getItem(KEY_AUTO_NEXT);
+    if (v === null) return !!defaultValue;
+    return v === "1";
+  } catch {
+    return !!defaultValue;
   }
 }

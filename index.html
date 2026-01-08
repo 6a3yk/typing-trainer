@@ -51,13 +51,36 @@
                 <div class="metric-label">Ошибки</div>
                 <div class="metric-value" id="errors">0</div>
               </div>
+              <div class="metric-block">
+                <div class="metric-label">Стрик</div>
+                <div class="metric-value" id="streak">0</div>
+              </div>
+              <!-- 🔽 Тумблер гонки В ЭТОЙ ЖЕ СТРОКЕ -->
+              <div class="metric-block metric-block--race">
+                <label class="toggle toggle--compact" title="Показать гонку">
+                  <input type="checkbox" id="raceToggle" />
+                  <span class="toggle-ui"></span>
+                  <span class="toggle-text">Гонка</span>
+                </label>
+              </div>
+
+
+              <!-- Гонка -->
+              <div class="race" id="raceWrap" aria-hidden="true">
+                <div class="race-track" id="raceTrack">
+                  <div class="race-start" aria-hidden="true"></div>
+                  <div class="race-finish" aria-hidden="true"></div>
+                  <div class="race-car" id="raceCar" aria-hidden="true"></div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="hint" id="hint">Подсказка: начните печатать. Используйте пробел, Tab(4 пробела) и Enter как в
             коде.</div>
           <div class="controls" role="group" aria-label="Управление">
             <button id="startBtn" class="primary">Начать заново</button>
-            <button id="resetBtn" class="secondary" title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить
+            <button id="resetBtn" class="secondary hide-for-now"
+              title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить
               прогресс</button>
             <!-- <div class="mobile-keys" id="mobileKeys" aria-label="Кнопки для мобильного ввода">
               <button class="mk" id="mkTab" type="button">Tab</button>
@@ -85,8 +108,15 @@
     <div>Время: <strong id="resTime">00:00</strong></div>
     <div>Символов в минуту: <strong id="resCpm">0</strong></div>
     <div>Точность (с первого раза): <strong id="resAcc">0%</strong></div>
-    <div>Текущие ошибки: <strong id="resErrors">0</strong></div>
+    <div>Ранг: <strong id="resRank">—</strong></div>
+    <div>Лучший стрик: <strong id="resBestStreak">0</strong></div>
+    <label class="toggle toggle--compact results-autonext" title="Автосмена задания после завершения">
+      <input type="checkbox" id="autoNextToggle" />
+      <span class="toggle-ui" aria-hidden="true"></span>
+      <span class="toggle-text">Автосмена через 7 сек</span>
+    </label>
     <div class="results-actions">
+      <button id="btnNextTask">Следующее задание</button>
       <button id="retryBtn" class="primary">Повторить</button>
       <button id="exportBtn" class="secondary" style="display:none">Экспорт</button>
       <button id="closeResBtn">Закрыть</button>
@@ -95,6 +125,18 @@
   <div class="fab-keys" id="fabKeys" aria-label="Кнопки ввода">
     <button class="fab-key" id="fabTab" type="button">Tab</button>
   </div>
+  <div class="future">
+    <div class="future-title">Версия: MVP7. В планах:</div>
+    <ul class="future-list">
+      <li>Загрузка своих программ</li>
+      <li>Больше вариаций заданий</li>
+      <li>Личный прогресс</li>
+      <li>Лидерборд</li>
+      <li>Совместная гонка</li>
+      <li>Улучшения</li>
+    </ul>
+  </div>
+  
 </body>
 
 </html>

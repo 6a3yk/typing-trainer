@@ -17,6 +17,10 @@ import { TaskSession } from "./session.js";
 import { InputController } from "./input.js";
 import { UI } from "./ui.js";
 import {
+  saveAutoNextEnabled,
+  loadAutoNextEnabled,
+  saveRaceEnabled,
+  loadRaceEnabled,
   saveSession,
   loadSession,
   clearSession,
@@ -82,7 +86,17 @@ export class App {
     // 3. Инициализируем UI
     this.ui = new UI();
 
+    this.currentStreak = 0;
+    this.bestStreak = 0;
+
+
     this.ui.setHandlers({
+      onRaceToggle: (enabled) => {
+        saveRaceEnabled(enabled);
+        // UI уже сам спрятал/показал, но можно подстраховаться
+        this.ui.setRaceEnabled(enabled);
+        this.input?.focus();
+      },
       onRetry: () => {
         this.session.reset();
         this._onRetry()
@@ -98,19 +112,51 @@ export class App {
         this.input?.focus();
       },
       onExport: () => this._onExport(),
+      onNextTask: () => {
+        this._cancelAutoNext();
+        this._switchToNextTask();
+
+      },
+
+      onAutoNextToggle: (enabled) => {
+        this.autoNextEnabled = !!enabled;
+        saveAutoNextEnabled(this.autoNextEnabled);
+        this.ui.setAutoNextEnabled(this.autoNextEnabled);
+
+        // если юзер включил уже на экране результата — можно сразу запланировать
+        if (this.session?.finished && this.autoNextEnabled) {
+          this._scheduleAutoNext();
+        } else {
+          this._cancelAutoNext();
+        }
+      },
     });
     this._initSideMenu();
     this._renderSideMenu();
     this._bindTopControls();
     this._bindMetricsToggle();
-    // 4. Рендерим начальное состояние
-    this._render();
-
     // 5. Подключаем ввод
     const isMobileLike =
       (navigator.maxTouchPoints ?? 0) > 0 && matchMedia("(pointer: coarse)").matches;
 
     this.isMobile = isMobileLike;
+
+    const defaultAutoNext = false; // безопасный дефолт
+    this.autoNextEnabled = loadAutoNextEnabled(defaultAutoNext);
+    this.autoNextDelayMs = 7000; // 5-10 сек, выбрал 7
+    this._autoNextTimer = null;
+
+    this.ui.setAutoNextEnabled(this.autoNextEnabled);
+
+    // Настройка "Гонка": desktop ON, mobile OFF
+    const defaultRaceEnabled = !isMobileLike;
+    const raceEnabled = loadRaceEnabled(defaultRaceEnabled);
+    this.ui.setRaceEnabled(raceEnabled);
+
+
+    // 4. Рендерим начальное состояние
+    this._render();
+
     this.inputEl = isMobileLike ? this.inputElMobile : this.inputElDesktop;
     this._initInput();
     this._bindFabKeys();
@@ -234,6 +280,33 @@ export class App {
   _handleChar(ch) {
     if (!this.session || this.session.finished) return; // защита от “зомби-ввода”
     this.session.input(ch);
+    const i = this.session.cursor - 1;
+    const s = this.session.symbols[i];
+
+    if (s && s.correct === true) {
+      this.currentStreak += 1;
+      if (this.currentStreak > this.bestStreak) {
+        this.bestStreak = this.currentStreak;
+      }
+    } else {
+      this.currentStreak = 0;
+    }
+
+    this.ui.setStreak(this.currentStreak);
+    // мини-бонус: пульс на значимых стриках
+    if (
+      this.currentStreak === 25 ||
+      this.currentStreak === 50 ||
+      this.currentStreak === 100
+    ) {
+      const el = this.ui.streakEl;
+      if (el) {
+        el.classList.remove("pulse"); // на случай повторного срабатывания
+        void el.offsetWidth;          // форсируем reflow
+        el.classList.add("pulse");
+        setTimeout(() => el.classList.remove("pulse"), 160);
+      }
+    }
     this._afterSessionUpdate();
   }
 
@@ -275,6 +348,7 @@ export class App {
 
     if (this.session.finished) {
       this._onFinished();
+
     }
   }
 
@@ -300,6 +374,10 @@ export class App {
    */
   _onFinished() {
     if (this.input) this.input.setEnabled(false);
+    if (this.autoNextEnabled) {
+      this._scheduleAutoNext();
+    }
+    this.ui.setBestStreak(this.bestStreak);
   }
 
   // UI сам решает, что показать
@@ -380,6 +458,10 @@ export class App {
   _onRetry() {
     // Retry логично делать как “начать заново” (fixed оставляем)
     this._restartAttemptKeepFixed();
+    this._cancelAutoNext();
+    this.currentStreak = 0;
+    this.bestStreak = 0;
+    this.ui.setStreak(0);
   }
 
   _onCloseResults() {
@@ -463,6 +545,11 @@ export class App {
   }
 
   _switchTask(taskId) {
+    this._cancelAutoNext();
+    this.currentStreak = 0;
+    this.bestStreak = 0;
+    this.ui.setStreak(0);
+
     const next = this.tasks.find((x) => x.id === taskId);
     if (!next) return;
     if (this.task && next.id === this.task.id) {
@@ -577,6 +664,31 @@ export class App {
       vv.addEventListener("scroll", updatePos); // важнее всего при перетаскивании/зуме
     }
     window.addEventListener("resize", updatePos);
+  }
+  _switchToNextTask() {
+    const idx = this.tasks.findIndex((t) => t.id === this.task?.id);
+    if (idx < 0) return;
+
+    const next = this.tasks[(idx + 1) % this.tasks.length];
+    this._switchTask(next.id);
+  }
+
+  _cancelAutoNext() {
+    if (this._autoNextTimer) {
+      clearTimeout(this._autoNextTimer);
+      this._autoNextTimer = null;
+    }
+  }
+
+  _scheduleAutoNext() {
+    this._cancelAutoNext();
+    this._autoNextTimer = setTimeout(() => {
+      this._autoNextTimer = null;
+      // если всё ещё на завершённой задаче и автосмена включена
+      if (this.autoNextEnabled && this.session?.finished) {
+        this._switchToNextTask();
+      }
+    }, this.autoNextDelayMs);
   }
 }
 

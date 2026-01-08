@@ -26,6 +26,23 @@ export class UI {
 
     this.cpmEl = document.getElementById("cpm");
     this.accuracyEl = document.getElementById("accuracy");
+
+
+    // ----------------------------
+    // Гонка (race)
+    // ----------------------------
+    this.raceWrap = document.getElementById("raceWrap");
+    this.raceTrack = document.getElementById("raceTrack");
+    this.raceCar = document.getElementById("raceCar");
+    this.raceToggle = document.getElementById("raceToggle");
+
+    this.raceEnabled = false; // App выставит
+    this._lastWrong = 0;
+
+    this.btnNextTask = document.getElementById("btnNextTask");
+    this.autoNextToggle = document.getElementById("autoNextToggle");
+    this.streakEl = document.getElementById("streak");
+    this.resBestStreakEl = document.getElementById("resBestStreak");
     // ----------------------------
     // Панель результатов
     // ----------------------------
@@ -34,7 +51,7 @@ export class UI {
     this.resTimeEl = document.getElementById("resTime");
     this.resCpmEl = document.getElementById("resCpm");
     this.resAccEl = document.getElementById("resAcc");
-    this.resErrorsEl = document.getElementById("resErrors");
+    this.resRankEl = document.getElementById("resRank");
 
     this.retryBtn = document.getElementById("retryBtn");
     this.exportBtn = document.getElementById("exportBtn");
@@ -46,6 +63,9 @@ export class UI {
 
     // Подписки (будут задаваться снаружи, из App)
     this.handlers = {
+      onNextTask: null,
+      onAutoNextToggle: null,
+      onRaceToggle: null,
       onRetry: null,
       onCloseResults: null,
       onExport: null,
@@ -175,9 +195,58 @@ export class UI {
   //   }
   // }
 
+  setRaceEnabled(enabled) {
+    this.raceEnabled = !!enabled;
+
+    if (this.raceWrap) {
+      this.raceWrap.style.display = this.raceEnabled ? "block" : "none";
+      this.raceWrap.setAttribute("aria-hidden", this.raceEnabled ? "false" : "true");
+    }
+    if (this.raceToggle) {
+      this.raceToggle.checked = this.raceEnabled;
+    }
+  }
+
+  _updateRace(stats) {
+    if (!this.raceEnabled) return;
+    if (!stats || !this.raceTrack || !this.raceCar) return;
+
+    const total = stats.total ?? 0;
+    const correct = stats.correct ?? 0; // <-- важно: только правильные двигают
+    const pct = total > 0 ? Math.max(0, Math.min(1, correct / total)) : 0;
+
+    const trackW = this.raceTrack.clientWidth;
+    const carW = this.raceCar.clientWidth || 28;
+    const padding = 8; // совпадает с left у стартовой зоны
+    const maxX = Math.max(0, trackW - carW - padding * 2);
+    const x = Math.round(pct * maxX);
+
+    // Важно: для shake-анимации сохраняем X в CSS-переменную
+    this.raceCar.style.setProperty("--race-x", `${x}px`);
+    this.raceCar.style.transform = `translate(${x}px, -50%)`;
+
+    // Состояние по точности
+    const acc = stats.accuracy ?? 1;
+    this.raceCar.classList.toggle("car--smoke", acc < 0.97 && acc >= 0.90);
+    this.raceCar.classList.toggle("car--broken", acc < 0.90);
+
+    // "Занос" на ошибке (wrong увеличился)
+    const wrong = stats.wrong ?? 0;
+    if (wrong > this._lastWrong) {
+      this.raceCar.classList.remove("car--shake");
+      // reflow чтобы анимация сработала повторно
+      void this.raceCar.offsetWidth;
+      this.raceCar.classList.add("car--shake");
+    }
+    this._lastWrong = wrong;
+  }
+
+
+
   // ---------------------------------------------------------------------------
   // РЕНДЕР СТАТИСТИКИ
   // ---------------------------------------------------------------------------
+
 
   _renderStats(stats) {
     if (!stats) return;
@@ -208,6 +277,9 @@ export class UI {
         ? `${Math.round((stats.accuracy ?? 1) * 100)}%`
         : "—";
     }
+
+
+    this._updateRace(stats);
   }
 
   // ---------------------------------------------------------------------------
@@ -224,10 +296,6 @@ export class UI {
       this.resTimeEl.textContent = this._formatTime(stats.timeMs);
     }
 
-    if (this.resErrorsEl) {
-      this.resErrorsEl.textContent = String(stats.wrong ?? 0);
-    }
-
     // CPM
     if (this.resCpmEl) {
       this.resCpmEl.textContent = String(stats.cpm ?? 0);
@@ -237,6 +305,10 @@ export class UI {
       this.resAccEl.textContent = `${Math.round((stats.accuracy ?? 1) * 100)}%`;
     }
 
+
+    if (this.resRankEl) {
+      this.resRankEl.textContent = this._calcRank(stats);
+    }
 
   }
 
@@ -269,6 +341,33 @@ export class UI {
         }
       });
     }
+    if (this.raceToggle) {
+      this.raceToggle.addEventListener("change", () => {
+        const enabled = !!this.raceToggle.checked;
+        this.setRaceEnabled(enabled);
+
+        if (typeof this.handlers.onRaceToggle === "function") {
+          this.handlers.onRaceToggle(enabled);
+        }
+      });
+    }
+
+    if (this.btnNextTask) {
+      this.btnNextTask.addEventListener("click", () => {
+        if (typeof this.handlers.onNextTask === "function") {
+          this.handlers.onNextTask();
+        }
+      });
+    }
+
+    if (this.autoNextToggle) {
+      this.autoNextToggle.addEventListener("change", () => {
+        const enabled = !!this.autoNextToggle.checked;
+        if (typeof this.handlers.onAutoNextToggle === "function") {
+          this.handlers.onAutoNextToggle(enabled);
+        }
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -284,5 +383,49 @@ export class UI {
       2,
       "0"
     )}`;
+  }
+
+
+  _calcRank(stats) {
+    const accPct = Math.round((stats.accuracy ?? 1) * 100); // 0..100
+    const cpm = Number(stats.cpm ?? 0);
+
+    if (accPct < 20) return "Бот";
+    if (accPct < 50) return "Печатал ногами";
+    if (accPct < 70) return "Новичок";
+
+    if (accPct < 80) {
+      return cpm > 100 ? "ТурбоЛяп" : "Пальцем в небо";
+    }
+
+    if (accPct < 90) {
+      return cpm > 100 ? "Печатная машинка" : "Рерайтер";
+    }
+
+    if (accPct < 100) {
+      if (cpm < 100) return "Снайпер";
+      if (cpm < 200) return "Мастер";
+      return "Программист";
+    }
+
+    // accPct === 100
+    if (cpm < 150) return "Перфекционист";
+    if (cpm < 300) return "Разработчик этого проекта";
+    return "ЧИТЕР";
+  }
+
+  setAutoNextEnabled(enabled) {
+    if (this.autoNextToggle) this.autoNextToggle.checked = !!enabled;
+  }
+  setStreak(current) {
+    if (this.streakEl) {
+      this.streakEl.textContent = String(current);
+    }
+  }
+
+  setBestStreak(best) {
+    if (this.resBestStreakEl) {
+      this.resBestStreakEl.textContent = String(best);
+    }
   }
 }
