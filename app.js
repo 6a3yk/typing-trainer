@@ -105,6 +105,9 @@ export class App {
         this._render();
 
         this.input?.focus();
+        track("retry_task", {
+          task_id: this.task.id,
+        });
       },
       onCloseResults: () => {
         this._onCloseResults()
@@ -115,6 +118,9 @@ export class App {
       onNextTask: () => {
         this._cancelAutoNext();
         this._switchToNextTask();
+        track("next_task", {
+          task_id: this.task.id,
+        });
 
       },
 
@@ -280,6 +286,12 @@ export class App {
   _handleChar(ch) {
     if (!this.session || this.session.finished) return; // защита от “зомби-ввода”
     this.session.input(ch);
+    if (!this._typingStarted) {
+      this._typingStarted = true;
+      track("typing_start", {
+        task_id: this.task.id,
+      });
+    }
     const i = this.session.cursor - 1;
     const s = this.session.symbols[i];
 
@@ -378,6 +390,14 @@ export class App {
       this._scheduleAutoNext();
     }
     this.ui.setBestStreak(this.bestStreak);
+    track("task_finish", {
+      task_id: this.task.id,
+      duration_sec: Math.round(stats.timeMs / 1000),
+      accuracy: Math.round((stats.accuracy ?? 0) * 100),
+      cpm: Math.round(stats.cpm ?? 0),
+      rank: this.ui._calcRank(stats), // или сохранённый текст ранга
+      best_streak: this.bestStreak ?? 0,
+    });
   }
 
   // UI сам решает, что показать
@@ -462,6 +482,7 @@ export class App {
     this.currentStreak = 0;
     this.bestStreak = 0;
     this.ui.setStreak(0);
+    this._typingStarted = false;
   }
 
   _onCloseResults() {
@@ -549,6 +570,7 @@ export class App {
     this.currentStreak = 0;
     this.bestStreak = 0;
     this.ui.setStreak(0);
+    this._typingStarted = false;
 
     const next = this.tasks.find((x) => x.id === taskId);
     if (!next) return;
@@ -576,6 +598,13 @@ export class App {
     this._renderSideMenu();
 
     this.input?.focus();
+
+    track("task_open", {
+      task_id: this.task.id,
+      task_type: this.task.typeId,
+      subtype_id: this.task.subtypeId,
+      variant_id: this.task.variantId,
+    });
   }
 
   _bindMetricsToggle() {
@@ -704,11 +733,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.__APP__ = app;
 });
 
-function isMobileLike() {
-  // надёжнее, чем тупо userAgent: учитывает тач
-  return (
-    (navigator.maxTouchPoints ?? 0) > 0 &&
-    matchMedia("(pointer: coarse)").matches
-  );
 
+
+function track(event, params = {}) {
+  if (!window.gtag) return;
+  window.gtag("event", event, params);
 }
