@@ -97,10 +97,18 @@ export class UI {
       let text = s.expected;
       if (s.expected === "\t") text = "    ";
       if (s.expected === "\n") text = (i === cursor ? "↵" : "\u00A0");
+
       if (s.entered && s.correct === false && s.typed) {
-        if (s.typed === "\n") text = "\u00A0";
-        else if (s.typed === "\t") text = "    ";     // ← ВОТ ОНО
-        else text = s.typed;
+        // если ожидался TAB, но ввели что-то другое — "растягиваем" до 4 позиций
+        if (s.expected === "\t") {
+          const ch = (s.typed === "\n") ? "↵" : (s.typed === "\t" ? " " : s.typed);
+          text = ch + "   "; // 1 символ + 3 пробела = ширина таба (4)
+        } else {
+          // обычная ошибка: если ввели TAB/ENTER "ложно" — показываем стрелку, 1 символ
+          if (s.typed === "\t") text = "→";      // ложный Tab
+          else if (s.typed === "\n") text = "↵"; // ложный Enter
+          else text = s.typed;
+        }
       }
       span.textContent = text || "\u00A0";
       this.codeArea.appendChild(span);
