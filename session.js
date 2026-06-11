@@ -1,316 +1,223 @@
-export class Symbol {
-    constructor(expected, index) {
-        this.expected = expected;
-        this.index = index;
+export class TaskSymbol {
+  constructor(expected, index) {
+    this.expected = expected;
+    this.index = index;
+    this.entered = false;
+    this.correct = null;
+    this.fixed = false;
+    this.typed = null;
+  }
 
-        this.entered = false;
-        this.correct = null; // true / false / null
-        this.fixed = false;
-        this.typed = null;
+  input(char, previousCorrect) {
+    this.entered = true;
+    this.typed = char;
+    this.correct = char === this.expected && previousCorrect;
+  }
 
-        this.isWhitespace =
-            expected === " " || expected === "\n" || expected === "\t";
-    }
+  backspace() {
+    this.fixed = true;
+    this.entered = false;
+    this.correct = null;
+    this.typed = null;
+  }
 
-    input(char, prevcorrect) {
-        this.entered = true;
-        this.typed = char;
-        this.correct = char === this.expected && prevcorrect;
-    }
-
-    backspace() {
-
-        // по твоей логике: любое стирание = fixed
-        this.fixed = true;
-        this.entered = false;
-        this.correct = null;
-        this.typed = null;
-    }
-
-    reset() {
-        this.entered = false;
-        this.correct = null;
-        this.fixed = false;
-        this.typed = null;
-    }
-
-    getState() {
-        if (!this.entered) return "pending";
-        if (this.correct === true) return "correct";
-        return "wrong";
-    }
-}
-
-/**
- * ЧИСТАЯ функция рендера (без состояния внутри Symbol)
- */
-export function renderSymbol(symbol, cursor) {
-    const active = cursor === symbol.index;
-    const expected = symbol.expected;
-
-    // newline
-    if (expected === "\n") {
-        if (active) return "↵";
-        if (!symbol.entered) return "";
-        if (symbol.correct === true) return "\u00A0";
-        if (symbol.typed === "\n") return "\u00A0";
-        return symbol.typed ?? "";
-    }
-
-    // tab
-    if (expected === "\t") {
-        if (!symbol.entered) return "    ";
-        if (symbol.correct === true || symbol.typed === "\n") return "    ";
-        return symbol.typed + "   ";
-    }
-
-    // обычные символы
-    if (!symbol.entered) return expected;
-    if (symbol.correct === true) return expected;
-    if (symbol.typed === "\n" || symbol.typed === "\t") return "\u00A0"
-    return symbol.typed ?? "";
+  reset() {
+    this.entered = false;
+    this.correct = null;
+    this.fixed = false;
+    this.typed = null;
+  }
 }
 
 export class TaskSession {
-    constructor(task) {
-        if (!task) throw new Error("TaskSession: task is required");
+  constructor(task) {
+    this.task = task;
+    this.symbols = Array.from(task.code).map((char, index) => new TaskSymbol(char, index));
+    this.resetRuntimeState();
+  }
 
-        this.task = task;
-        this.symbols = this._buildSymbols(task.code);
-        this.cursor = 0;    //положение курсора
+  resetRuntimeState() {
+    this.cursor = 0;
+    this.duration = 0;
+    this.startedAt = null;
+    this.endedAt = null;
+    this.active = false;
+    this.finished = false;
+    this.atEnd = false;
+  }
 
-        this.duration = 0;   //время, потраченное до "загрузки"
-        this.startedAt = null; //время начала текущей сессии
-        this.endedAt = null;   //время конца текущей сессии
+  resetSymbols() {
+    this.symbols.forEach((symbol) => symbol.reset());
+  }
 
+  start() {
+    if (!this.active && this.startedAt === null) {
+      this.active = true;
+      this.startedAt = Date.now();
+    }
+  }
 
-        this.active = false; //задание активно
-        this.finished = false; //задание завершено (всё было выполнено верно)
-        this.atEnd = false;    //курсор в конце
+  input(char) {
+    this.updateState();
+    if (this.finished || this.atEnd) {
+      return;
     }
 
-    _buildSymbols(code) {
-        return Array.from(code).map((ch, i) => new Symbol(ch, i));
+    this.start();
+    const previous = this.symbols[this.cursor - 1];
+    const previousCorrect = previous ? previous.correct === true : true;
+    this.symbols[this.cursor].input(char, previousCorrect);
+    this.cursor += 1;
+    this.updateState();
+  }
+
+  backspace() {
+    this.updateState();
+    if (this.finished || this.cursor <= 0) {
+      return;
     }
 
-    start() {
-        if (!this.active && this.startedAt === null) {
-            this.active = true;
-            this.startedAt = Date.now();
-        }
+    this.start();
+    if (this.atEnd) {
+      this.cursor = this.symbols.length;
     }
 
-    updateState() {
-        const n = this.symbols.length;
-        this.atEnd = this.cursor >= n
-        // пустое задание - сразу завершённое
-        if (n === 0) {
-            this.startedAt = null
-            this.endedAt = null
-            this.duration = 0
-            this.finishThis()
-            return;
-        }
+    this.cursor -= 1;
+    this.symbols[this.cursor].backspace();
+    this.updateState();
+  }
 
-        //ранее завершённое - это конец!
-        if (this.finished) {
-            this.finishThis()
-            return;
-        }
+  reset() {
+    this.restartAttempt();
+  }
 
-        //сейчас завершённое - замеряем время
-        if (this.atEnd && this.isPassed()) {
-            this.endedAt = Date.now();
-            this.finishThis()
-            return;
-        }
+  restartAttempt() {
+    this.resetSymbols();
+    this.resetRuntimeState();
+  }
 
-        //дошли до конца, но задание не завершено (верно) - но вводить уже нельзя
-        if (this.atEnd) {
-            this.cursor = n;
-            return;
-        }
+  updateState() {
+    const total = this.symbols.length;
+    this.atEnd = this.cursor >= total;
 
+    if (total === 0) {
+      this.finish();
+      return;
     }
 
-    input(char) {
-        this.updateState();
-
-        if (this.finished) return;
-        if (this.atEnd) return;
-        this.start();
-        const s = this.symbols[this.cursor];
-        const prevcorrect = (this.symbols[this.cursor - 1]) ? this.symbols[this.cursor - 1].correct : true;
-
-        s.input(char, prevcorrect);
-        this.cursor += 1;
-        this.updateState()
+    if (this.finished) {
+      this.finish();
+      return;
     }
 
-    finishThis() {
-        this.finished = true;
-        this.active = false;
-        this.atEnd = true;
-        this.cursor = this.symbols.length;
+    if (this.atEnd && this.isPassed()) {
+      this.endedAt = Date.now();
+      this.finish();
+      return;
     }
 
-    backspace() {
-        this.updateState()
-        if (this.cursor <= 0) return;
-        if (this.finished) return;
-        this.start();
+    if (this.atEnd) {
+      this.cursor = total;
+    }
+  }
 
-        // если курсор был "за концом" (n), сначала возвращаемся на последний символ
-        const n = this.symbols.length
-        if (this.atEnd) {
-            this.cursor = n;
-        }
+  finish() {
+    this.finished = true;
+    this.active = false;
+    this.atEnd = true;
+    this.cursor = this.symbols.length;
+  }
 
-        this.cursor -= 1;
-        this.symbols[this.cursor].backspace();
-        this.updateState()
+  isPassed() {
+    return this.symbols.every((symbol) => symbol.entered === true && symbol.correct === true);
+  }
+
+  getTimeMs() {
+    if (this.finished && this.endedAt && this.startedAt) {
+      return this.duration + this.endedAt - this.startedAt;
     }
 
-    isPassed() {
-        for (const s of this.symbols) {
-            if (s.correct !== true || s.entered !== true) return false;
-        }
-        return true;
+    if (this.active && this.startedAt) {
+      return this.duration + Date.now() - this.startedAt;
     }
 
+    return this.duration || 0;
+  }
 
-    reset() {
-        this.symbols.forEach((s) => s.reset());
-        this.cursor = 0;
+  getStats() {
+    let entered = 0;
+    let correct = 0;
+    let correctNotFixed = 0;
 
-        this.duration = 0;   //время, потраченное до "загрузки"
-        this.startedAt = null; //время начала текущей сессии
-        this.endedAt = null;   //время конца текущей сессии
-
-
-        this.active = false; //задание активно
-        this.finished = false; //задание завершено (всё было выполнено верно)
-        this.atEnd = false;    //курсор в конце
+    for (const symbol of this.symbols) {
+      if (symbol.entered) {
+        entered += 1;
+      }
+      if (symbol.correct === true) {
+        correct += 1;
+      }
+      if (symbol.correct === true && symbol.fixed === false) {
+        correctNotFixed += 1;
+      }
     }
 
-    /**
-     * Готовая модель для UI
-     */
-    getRenderArray() {
-        return this.symbols.map((s) => renderSymbol(s, this.cursor));
-    }
+    const timeMs = this.getTimeMs();
+    const minutes = Math.max(timeMs / 60000, 3 / 60);
+    const wrong = entered - correct;
 
-    /**
-     * Для статистики / сохранения
-     */
-    getStats() {
-        let correctNotFixed = 0;
-        let entered = 0;
-        let correct = 0;
-        for (const s of this.symbols) {
-            if (s.correct === true && s.fixed === false) correctNotFixed++;
-            if (s.entered) entered++;
-            if (s.correct === true) correct++;
-        }
-        // прогресс entered/total. CPM - correct. Acc - correctNotFixed/entered.
-        const timeMs = this.getMs(); // как ты хочешь
-        const minutes = Math.max(timeMs / 60000, 3 / 60);
-        const cpm = Math.round(correct / minutes);
+    return {
+      total: this.symbols.length,
+      entered,
+      correct,
+      correctNotFixed,
+      wrong,
+      cursor: this.cursor,
+      finished: this.finished,
+      accuracy: entered > 0 ? correctNotFixed / entered : 1,
+      cpm: Math.round(correct / minutes),
+      timeMs
+    };
+  }
 
-        const wrong = entered - correct
-        console.log(entered, correctNotFixed)
-        // “строгая” точность: штраф за исправленные
-        const accuracy = entered > 0 ? (correctNotFixed / entered) : 1;
-        return {
-            total: this.symbols.length, // всего
-            correct, //введено верно
-            entered,  // введено всего
-            correctNotFixed,    // верно (не было ошибок)
-            wrong, //ошибки
-            cpm,
-            accuracy,
+  toJSON() {
+    return {
+      cursor: this.cursor,
+      duration: this.getTimeMs(),
+      finished: this.finished,
+      atEnd: this.atEnd,
+      symbols: this.symbols.map((symbol) => ({
+        entered: symbol.entered,
+        correct: symbol.correct,
+        fixed: symbol.fixed,
+        typed: symbol.typed
+      }))
+    };
+  }
 
-            finished: this.finished,     //выполнено
-            cursor: this.cursor,        //положение курсора
-            timeMs
-        };
-    }
-    getMs() {
-        let ms = 0;
-        if (this.finished && this.endedAt && this.startedAt) {
-            ms = this.duration + this.endedAt - this.startedAt;
-        } else if (this.active && this.startedAt) {
-            ms = this.duration + Date.now() - this.startedAt;
-        } else if (this.duration) {
-            ms = this.duration;
-        } else {
-            ms = 0;
-        }
-        return ms;
-    }
+  static fromJSON(task, data) {
+    const session = new TaskSession(task);
+    session.cursor = data.cursor ?? 0;
+    session.duration = data.duration ?? 0;
+    session.finished = data.finished ?? false;
+    session.atEnd = data.atEnd ?? false;
 
-    /**
-     * Сериализация (для localStorage)
-     */
-    toJSON() {
-        return {
-            taskId: this.task.id,
-            cursor: this.cursor,
-            duration: this.getMs(),
+    data.symbols?.forEach((savedSymbol, index) => {
+      const symbol = session.symbols[index];
+      if (!symbol) {
+        return;
+      }
 
-            finished: this.finished,
-            active: this.active,
-            atEnd: this.atEnd,
+      TaskSession.restoreSymbolState(symbol, savedSymbol);
+    });
 
-            symbols: this.symbols.map((s) => ({
-                entered: s.entered,
-                correct: s.correct,
-                fixed: s.fixed,
-                typed: s.typed,
-            })),
-        };
-    }
+    session.updateState();
+    return session;
+  }
 
-    /**
-     * Восстановление состояния
-     */
-    static fromJSON(task, data) {
-        const session = new TaskSession(task);
-
-        session.cursor = data.cursor ?? 0;
-        session.finished = data.finished ?? false;
-        session.duration = data.duration ?? 0;   //время, потраченное до "загрузки"
-
-        session.active = false; //задание активно
-        session.finished = data.finished ?? false; //задание завершено (всё было выполнено верно)
-        session.atEnd = data.atEnd ?? false;    //курсор в конце
-
-        data.symbols?.forEach((sd, i) => {
-            const s = session.symbols[i];
-            if (!s) return;
-
-            s.entered = sd.entered;
-            s.correct = sd.correct;
-            s.fixed = sd.fixed;
-            s.typed = sd.typed;
-        });
-        session.updateState()
-        return session;
-    }
-    // session.js
-    getView() {
-        return {
-            cursor: this.cursor,
-            symbols: this.symbols.map(s => ({
-                expected: s.expected,
-                typed: s.typed,
-                entered: s.entered,
-                correct: s.correct,
-                fixed: s.fixed,
-                isNewline: s.expected === "\n",
-                isTab: s.expected === "\t",
-            })),
-            stats: this.getStats(),
-        };
-    }
+  static restoreSymbolState(symbol, savedSymbol) {
+    symbol.entered = savedSymbol.entered ?? false;
+    symbol.correct = savedSymbol.correct ?? null;
+    symbol.fixed = savedSymbol.fixed ?? false;
+    symbol.typed = savedSymbol.typed ?? null;
+  }
 }

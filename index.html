@@ -1,155 +1,317 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
-
 <head>
-  <meta charset="UTF-8" />
-  <title>Тренажер печати по Python</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css">
-  <!-- Google tag (gtag.js) -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-2SNEP7KVVH"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-
-    gtag('js', new Date());
-
-    gtag('config', 'G-2SNEP7KVVH', {
+    function gtag() { window.dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "G-2SNEP7KVVH", {
       anonymize_ip: true,
       send_page_view: true
     });
   </script>
+  <title>Тренажёр печати ЕГЭ по информатике</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <!-- Кнопка открытия бокового меню -->
-  <button class="side-menu-btn" id="openMenuBtn" title="Выбрать задание"
-    aria-label="Открыть меню заданий">&#x25B6;</button>
-  <!-- Боковое меню выбора задания -->
-  <nav class="side-menu" id="sideMenu" aria-label="Меню выбора задания">
-    <div class="side-menu-title">Выберите задание</div>
-    <ul class="side-menu-list" id="sideMenuList"></ul>
-  </nav>
-  <div class="wrap">
-    <h1>Тренажер печати по Python</h1>
-    <div class="layout">
-      <div class="layout-main">
-        <div class="panel">
-          <div class="row row-col row-minh-260">
-            <div class="code-area" id="codeArea" aria-label="Текст к набору">
-              <!-- код будет вставлен программно -->
+  <audio id="bootSound" preload="auto" src="./Assets/print_sound.mp3"></audio>
+  <div id="bootOverlay" class="boot-overlay" hidden aria-hidden="true">
+    <div class="boot-window" role="status" aria-live="polite" aria-label="Загрузка тренажёра">
+      <div class="boot-window-topline">
+        <span class="boot-dot"></span>
+        <span class="boot-dot"></span>
+        <span class="boot-dot"></span>
+        <span class="boot-window-title">loading.py</span>
+        <span id="bootPercent" class="boot-percent">0%</span>
+      </div>
+      <div class="boot-window-body">
+        <div class="boot-code-shell">
+          <div class="boot-code-track">
+            <div class="boot-code boot-code-ghost" aria-hidden="true">
+              <span class="boot-token boot-token-function">print</span><span class="boot-token boot-token-punctuation">(</span><span class="boot-token boot-token-string">'loading completed'</span><span class="boot-token boot-token-punctuation">)</span>
             </div>
-            <div class="metrics-panel" id="metricsPanel">
-              <button class="metrics-toggle-btn" id="metricsToggleBtn" title="Свернуть/развернуть метрики"
-                aria-label="Свернуть/развернуть метрики">▲
-              </button>
-
-              <div class="metric-block">
-                <div class="metric-label">Время</div>
-                <div class="metric-value" id="timer">00:00</div>
-              </div>
-              <div class="metric-block">
-                <div class="metric-label">Прогресс</div>
-                <div class="metric-value" id="progress">0 / 0</div>
-              </div>
-              <div class="metric-block">
-                <div class="metric-label">Символов в минуту</div>
-                <div class="metric-value" id="cpm">0</div>
-              </div>
-              <div class="metric-block">
-                <div class="metric-label">Точность</div>
-                <div class="metric-value" id="accuracy">0%</div>
-              </div>
-              <div class="metric-block">
-                <div class="metric-label">Ошибки</div>
-                <div class="metric-value" id="errors">0</div>
-              </div>
-              <div class="metric-block">
-                <div class="metric-label">Стрик</div>
-                <div class="metric-value" id="streak">0</div>
-              </div>
-              <!-- 🔽 Тумблер гонки В ЭТОЙ ЖЕ СТРОКЕ -->
-              <div class="metric-block metric-block--race">
-                <label class="toggle toggle--compact" title="Показать гонку">
-                  <input type="checkbox" id="raceToggle" />
-                  <span class="toggle-ui"></span>
-                  <span class="toggle-text">Гонка</span>
-                </label>
-              </div>
-
-
-              <!-- Гонка -->
-              <div class="race" id="raceWrap" aria-hidden="true">
-                <div class="race-track" id="raceTrack">
-                  <div class="race-start" aria-hidden="true"></div>
-                  <div class="race-finish" aria-hidden="true"></div>
-                  <div class="race-car" id="raceCar" aria-hidden="true"></div>
-                </div>
-              </div>
+            <div id="bootCodeFill" class="boot-code boot-code-fill" aria-hidden="true">
+              <span class="boot-token boot-token-function">print</span><span class="boot-token boot-token-punctuation">(</span><span class="boot-token boot-token-string">'loading completed'</span><span class="boot-token boot-token-punctuation">)</span>
             </div>
-          </div>
-          <div class="hint" id="hint">Подсказка: начните печатать. Используйте пробел, Tab(4 пробела) и Enter как в
-            коде.</div>
-          <div class="controls" role="group" aria-label="Управление">
-            <button id="startBtn" class="primary">Начать заново</button>
-            <button id="resetBtn" class="secondary hide-for-now"
-              title="Сбросить прогресс, но сохранить фрагмент кода">Сбросить
-              прогресс</button>
-            <!-- <div class="mobile-keys" id="mobileKeys" aria-label="Кнопки для мобильного ввода">
-              <button class="mk" id="mkTab" type="button">Tab</button>
-            </div> -->
+            <span class="boot-caret" aria-hidden="true"></span>
           </div>
         </div>
+        <p id="bootOutput" class="boot-output" hidden>&gt; loading completed</p>
       </div>
     </div>
   </div>
 
-  <!-- Скрытый input для надёжного приёма ввода (поддержка IME, мобильных клавиатур) -->
-  <textarea id="hiddenInput" class="hidden-input" aria-label="Скрытый ввод" autocomplete="off" autocorrect="off"
-    autocapitalize="off" spellcheck="false"></textarea>
-  <input id="hiddenInputPwd" class="hidden-input" type="password" inputmode="text" autocomplete="new-password"
-    autocorrect="off" autocapitalize="off" spellcheck="false" name="not-password" aria-label="Скрытый ввод" />
-  <!-- <script type="module">
-  window.CODE_TO_TYPE = `print("Hello, world!")\nif 5>2:\n\ta=5-2`;
-</script> -->
-  <script type="module" src="./app.js"></script>
+  <div class="page-shell">
+    <button id="menuToggleButton" class="menu-toggle-button" type="button" aria-label="Открыть меню заданий">▶</button>
 
+    <aside id="taskDrawer" class="task-drawer panel">
+      <div class="toggles">
+        <div id="orderModeControl" class="mode-toggle" role="group" aria-label="Порядок заданий" data-active-index="0">
+          <span class="mode-toggle-thumb" aria-hidden="true"></span>
+          <button class="mode-toggle-option" type="button" data-order-mode="sequential" aria-pressed="true" title="Все задания по их порядку">По порядку</button>
+          <button class="mode-toggle-option" type="button" data-order-mode="random" aria-pressed="false" title="Все задания в случайном порядке">Случайно</button>
+          <button class="mode-toggle-option" type="button" data-order-mode="each-type" aria-pressed="false" title="По одному заданию из каждого типа заданий по их порядку">Каждый тип</button>
+        </div>
+      </div>
 
-  <!-- Панель результатов -->
-  <div id="resultsPanel" class="results-panel">
-    <h3 class="results-title">Результат</h3>
-    <div>Время: <strong id="resTime">00:00</strong></div>
-    <div>Символов в минуту: <strong id="resCpm">0</strong></div>
-    <div>Точность (с первого раза): <strong id="resAcc">0%</strong></div>
-    <div>Ранг: <strong id="resRank">—</strong></div>
-    <div>Лучший стрик: <strong id="resBestStreak">0</strong></div>
-    <label class="toggle toggle--compact results-autonext" title="Автосмена задания после завершения">
-      <input type="checkbox" id="autoNextToggle" />
-      <span class="toggle-ui" aria-hidden="true"></span>
-      <span class="toggle-text">Автосмена через 7 сек</span>
-    </label>
-    <div class="results-actions">
-      <button id="btnNextTask">Следующее задание</button>
-      <button id="retryBtn" class="primary">Повторить</button>
-      <button id="exportBtn" class="secondary" style="display:none">Экспорт</button>
-      <button id="closeResBtn">Закрыть</button>
+      <div class="tree-global-actions">
+        <button id="treeToggleAllButton" class="tree-toggle-all-button" type="button" aria-label="Развернуть всё дерево заданий" title="Развернуть всё дерево заданий">▶</button>
+        <h2>Задания</h2>
+      </div>
+
+      <div id="taskList" class="task-list" aria-label="Список заданий"></div>
+    </aside>
+
+    <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+
+    <main class="layout">
+      <section class="workspace">
+        <div class="workspace-split">
+          <div class="panel trainer-panel">
+            <button id="helpGuideButton" class="trainer-help-button" type="button" aria-label="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1087;&#1086;&#1076;&#1089;&#1082;&#1072;&#1079;&#1082;&#1080;" title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1087;&#1086;&#1076;&#1089;&#1082;&#1072;&#1079;&#1082;&#1080;">?</button>
+            <div class="trainer-toolbar">
+              <div class="toolbar-leading">
+                <button id="restartButton" class="icon-button" type="button" aria-label="Начать заново" title="Начать заново">↻</button>
+                <button id="pauseButton" class="pause-button" type="button" aria-label="Поставить на паузу" title="Поставить на паузу">❚❚</button>
+                <button id="skipTaskButton" class="skip-task-button" type="button" aria-label="Следующее задание" title="Следующее задание">⏭</button>
+              </div>
+              <div class="task-heading">
+                <h2 id="currentTaskName">Не выбрано</h2>
+                <p id="currentTaskMeta" class="task-subtype">Выбери задачу слева</p>
+                <p id="currentTaskCode" class="task-code-line">-</p>
+              </div>
+            </div>
+
+            <div id="editorSurface" class="editor-surface" tabindex="0" aria-label="Поле тренировки печати">
+              <div class="editor-topline">
+                <span class="editor-dot"></span>
+                <span class="editor-dot"></span>
+                <span class="editor-dot"></span>
+                <span id="editorHint" class="editor-hint">Кликни здесь, чтобы начать печатать</span>
+              </div>
+              <div id="codePreview" class="code-preview" aria-live="polite"></div>
+            </div>
+
+            <textarea
+              id="typingInput"
+              class="typing-capture"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-hidden="true"
+              tabindex="-1"
+            ></textarea>
+          </div>
+
+          <div class="metrics-dock">
+            <button id="metricsToggleBtn" class="metrics-toggle-btn" type="button" aria-label="Свернуть панель метрик" title="Свернуть панель метрик">→</button>
+
+            <aside id="metricsPanel" class="panel metrics-panel">
+              <div class="metrics-grid">
+                <article class="metric-card">
+                  <span class="metric-label">Время</span>
+                  <strong id="timerValue" class="metric-value">00:00</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Прогресс</span>
+                  <strong id="progressValue" class="metric-value">0 / 0</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Скорость</span>
+                  <strong id="speedValue" class="metric-value">0 символов/мин</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label results-stat-label-with-tip">
+                    <span>Точность</span>
+                    <span class="info-tip" tabindex="0" aria-label="Пояснение по точности">
+                      ?
+                      <span class="info-tip-popup">Точность считает только символы, набранные без ошибок и исправлений.</span>
+                    </span>
+                  </span>
+                  <strong id="accuracyValue" class="metric-value">100%</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label">Ошибки</span>
+                  <strong id="errorsValue" class="metric-value">0</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="metric-label results-stat-label-with-tip">
+                    <span>Стрик</span>
+                    <span class="info-tip" tabindex="0" aria-label="Пояснение по стрику">
+                      ?
+                      <span class="info-tip-popup">Стрик — это серия правильных нажатий подряд. Ошибка сбрасывает серию.</span>
+                    </span>
+                  </span>
+                  <strong id="streakValue" class="metric-value">0</strong>
+                </article>
+                <article class="metric-card metric-card-best">
+                  <span class="metric-label">Лучший результат</span>
+                  <strong id="bestResultBadge" class="metric-value metric-value-best">Пока нет</strong>
+                </article>
+              </div>
+              <div class="metrics-note">
+                <p class="metrics-note-heading">Тренажёр поможет:</p>
+                <ul class="metrics-note-list">
+                  <li class="metrics-note-item metrics-note-item-positive">Потренировать скорость печати</li>
+                  <li class="metrics-note-item metrics-note-item-positive">Запомнить основной шаблонный код</li>
+                  <li class="metrics-note-item metrics-note-item-positive">Разнообразить подготовку</li>
+                </ul>
+                <p class="metrics-note-heading metrics-note-heading-secondary">Тренажёр не научит:</p>
+                <ul class="metrics-note-list">
+                  <li class="metrics-note-item metrics-note-item-negative">Понимать алгоритмы</li>
+                  <li class="metrics-note-item metrics-note-item-negative">Решать задания</li>
+                  <li class="metrics-note-item metrics-note-item-negative">Программировать самостоятельно</li>
+                </ul>
+              </div>
+              <div class="toolbar-media metrics-media">
+                <span id="musicTrackLabel" class="music-track-label">Pt2</span>
+                <span class="info-tip music-tip" tabindex="0" aria-label="Список треков">
+                  ?
+                  <span id="musicTracksTip" class="info-tip-popup info-tip-popup--music"></span>
+                </span>
+                <button id="musicPrevButton" class="music-button music-button-secondary" type="button" aria-label="Предыдущий трек" title="Предыдущий трек">⏮</button>
+                <button id="musicToggleButton" class="music-button music-button-primary" type="button" aria-label="Включить музыку" title="Включить музыку">▶</button>
+                <button id="musicNextButton" class="music-button music-button-secondary" type="button" aria-label="Следующий трек" title="Следующий трек">⏭</button>
+              </div>
+            </aside>
+          </div>
+          <button id="explanationToggleBtn" class="explanation-toggle-btn" type="button" aria-label="Открыть разбор задания" title="Открыть разбор задания">▼</button>
+
+          <div class="explanation-dock">
+            <aside id="explanationPanel" class="panel explanation-panel" aria-label="Разбор задания" aria-hidden="true">
+              <div class="explanation-visual">
+                <div class="explanation-block explanation-task-block">
+                  <span class="explanation-task-line explanation-task-line-wide"></span>
+                  <span class="explanation-task-line"></span>
+                  <span class="explanation-task-line explanation-task-line-short"></span>
+                </div>
+                <div class="explanation-block explanation-slide-block">
+                  <span class="explanation-slide-line explanation-slide-line-wide"></span>
+                  <span class="explanation-slide-line"></span>
+                  <span class="explanation-slide-code"></span>
+                  <span class="explanation-slide-code explanation-slide-code-short"></span>
+                  <img id="explanationSlideImage" class="explanation-slide-image" src="./test_image_5-1-1.png" alt="Слайд объяснения для задания 5-1-1" hidden>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div id="racePanel" class="panel race-panel">
+          <div class="race-toolbar">
+            <div id="raceWrap" class="race" aria-hidden="false">
+              <div id="raceTrack" class="race-track">
+                <div class="race-start" aria-hidden="true"></div>
+                <div class="race-finish" aria-hidden="true"></div>
+                <div id="raceCar" class="race-car" aria-hidden="true"></div>
+              </div>
+            </div>
+            <label class="toggle race-visibility-toggle" for="raceVisibilityToggle" aria-label="Показать или скрыть гонку">
+              <span class="race-visibility-control">
+                <input id="raceVisibilityToggle" type="checkbox" checked>
+                <span class="race-visibility-switch" aria-hidden="true">
+                  <span class="race-visibility-thumb"></span>
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <section id="resultsPanel" class="results-panel" aria-live="polite" aria-label="Результат попытки">
+    <button id="resultsToggleButton" class="results-toggle-btn" type="button" aria-label="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1088;&#1077;&#1079;&#1091;&#1083;&#1100;&#1090;&#1072;&#1090;" title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1088;&#1077;&#1079;&#1091;&#1083;&#1100;&#1090;&#1072;&#1090;">&#9650;</button>
+    <div class="results-head">
+      <div>
+        <p class="results-kicker">Результат</p>
+      </div>
     </div>
-  </div>
-  <div class="fab-keys" id="fabKeys" aria-label="Кнопки ввода">
-    <button class="fab-key" id="fabTab" type="button">Tab</button>
-  </div>
-  <div class="future">
-    <div class="future-title">Версия: MVP7. В планах:</div>
-    <ul class="future-list">
-      <li>Загрузка своих программ</li>
-      <li>Больше вариаций заданий</li>
-      <li>Личный прогресс</li>
-      <li>Лидерборд</li>
-      <li>Совместная гонка</li>
-      <li>Улучшения</li>
-    </ul>
+
+    <div class="results-rank-wrap">
+      <span class="results-rank-label results-stat-label-with-tip">
+        <span>Ранг</span>
+        <span class="info-tip" tabindex="0" aria-label="Список рангов">
+          ?
+          <span id="resRankTip" class="info-tip-popup info-tip-popup--rank"></span>
+        </span>
+      </span>
+      <strong id="resRank" class="results-rank-value">—</strong>
+    </div>
+
+    <div class="results-grid">
+      <div class="results-stat">
+        <span class="results-stat-label">Время</span>
+        <strong id="resTime" class="results-stat-value">00:00</strong>
+      </div>
+      <div class="results-stat">
+        <span class="results-stat-label">Скорость</span>
+        <strong id="resCpm" class="results-stat-value">0</strong>
+      </div>
+      <div class="results-stat">
+        <span class="results-stat-label results-stat-label-with-tip">
+          <span>Точность</span>
+          <span class="info-tip" tabindex="0" aria-label="Пояснение по точности">
+            ?
+            <span class="info-tip-popup">Точность считает только символы, набранные без ошибок и исправлений.</span>
+          </span>
+        </span>
+        <strong id="resAcc" class="results-stat-value">0%</strong>
+      </div>
+      <div class="results-stat">
+        <span class="results-stat-label">Лучший стрик</span>
+        <strong id="resBestStreak" class="results-stat-value">0</strong>
+      </div>
+    </div>
+
+    <p id="resultText" class="support-text results-text"></p>
+
+    <div class="results-actions">
+      <button id="retryResultButton" class="button button-secondary" type="button">Повторить</button>
+      <button id="nextTaskButton" class="button button-primary" type="button">Следующее задание</button>
+    </div>
+    <div class="results-options">
+      <label class="results-option-toggle auto-advance-toggle" for="autoAdvanceToggle">
+        <span class="results-option-copy">
+          <span class="results-option-title">Автосмена задания</span>
+          <span class="results-option-subtitle">Через 5 секунд после результата</span>
+        </span>
+        <span class="race-visibility-control">
+          <input id="autoAdvanceToggle" type="checkbox">
+          <span class="race-visibility-switch" aria-hidden="true">
+            <span class="race-visibility-thumb"></span>
+          </span>
+        </span>
+      </label>
+      <div class="results-option-toggle results-order-mode">
+        <span class="results-option-copy">
+          <span class="results-option-title">Порядок заданий</span>
+          <span class="results-option-subtitle">Как выбирать следующее задание</span>
+        </span>
+        <div id="resultsOrderModeControl" class="mode-toggle mode-toggle-compact" role="group" aria-label="Порядок заданий" data-active-index="0">
+          <span class="mode-toggle-thumb" aria-hidden="true"></span>
+          <button class="mode-toggle-option" type="button" data-order-mode="sequential" aria-pressed="true" title="Все задания по их порядку">По порядку</button>
+          <button class="mode-toggle-option" type="button" data-order-mode="random" aria-pressed="false" title="Все задания в случайном порядке">Случайно</button>
+          <button class="mode-toggle-option" type="button" data-order-mode="each-type" aria-pressed="false" title="По одному заданию из каждого типа заданий по их порядку">Каждый тип</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="helpGuideOverlay" class="help-guide-overlay" aria-hidden="true"></div>
+
+  <audio id="musicPlayer" preload="metadata"></audio>
+  <div id="mobileFabKeys" class="mobile-fab-keys" aria-label="Кнопки ввода">
+    <button id="mobileTabButton" class="mobile-fab-key" type="button">Tab</button>
   </div>
 
+  <script type="module" src="app.js"></script>
 </body>
-
 </html>
+
