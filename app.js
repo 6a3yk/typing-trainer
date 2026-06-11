@@ -52,7 +52,7 @@ function createMusicPlaylist(fileNames, basePath = "./") {
   }));
 }
 
-const FALLBACK_MUSIC_PLAYLIST = createMusicPlaylist(FALLBACK_MUSIC_FILES);
+const FALLBACK_MUSIC_PLAYLIST = createMusicPlaylist(FALLBACK_MUSIC_FILES, MUSIC_DIRECTORY);
 
 function wait(ms) {
   return new Promise((resolve) => {
@@ -1634,6 +1634,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     app.ui.elements.resultText.textContent = "Не удалось загрузить задания. Проверь, что проект открыт через Live Server.";
   }
 });
+
 
 
 
